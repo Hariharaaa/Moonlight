@@ -1,0 +1,48 @@
+{
+  "name": "fullmoon-midnight-counter",
+  "version": "1.0.0",
+  "description": "A privacy-preserving counter smart contract built on the Midnight Network using Compact ZK language",
+  "main": "index.js",
+  "scripts": {
+    "compile": "compact compile contracts/counter.compact",
+    "test": "npx jest --testPathPattern=tests/ --passWithNoTests",
+    "deploy:preview": "NODE_OPTIONS=\"--max-old-space-size=12288\" node scripts/deploy.js --network preview",
+    "deploy:preprod": "NODE_OPTIONS=\"--max-old-space-size=12288\" node scripts/deploy.js --network preprod",
+    "build": "npm run compile && npm test"
+  },
+  "keywords": [
+    "midnight",
+    "blockchain",
+    "zk-proofs",
+    "privacy",
+    "compact",
+    "web3"
+  ],
+  "author": "Harihara",
+  "license": "MIT",
+  "devDependencies": {
+    "@midnight-ntwrk/compact-runtime": "^0.16.0",
+    "@midnight-ntwrk/ledger": "^4.0.0",
+    "@midnight-ntwrk/midnight-js-contracts": "^4.1.1",
+    "@midnight-ntwrk/midnight-js-network-id": "^4.1.1",
+    "@midnight-ntwrk/midnight-js-types": "^4.1.1",
+    "@midnight-ntwrk/zswap": "^4.0.0",
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.4.11",
+    "typescript": "^5.9.3"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.ts"
+    ],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    }
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
