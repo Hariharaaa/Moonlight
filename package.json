@@ -4,8 +4,9 @@
   "description": "A privacy-preserving counter smart contract built on the Midnight Network using Compact ZK language",
   "main": "index.js",
   "scripts": {
-    "compile": "compact compile contracts/counter.compact",
-    "test": "npx jest --testPathPattern=tests/ --passWithNoTests",
+    "compile": "compact compile --skip-zk contracts/counter.compact managed/",
+    "compile:full": "compact compile contracts/counter.compact managed/",
+    "test": "jest",
     "deploy:preview": "NODE_OPTIONS=\"--max-old-space-size=12288\" node scripts/deploy.js --network preview",
     "deploy:preprod": "NODE_OPTIONS=\"--max-old-space-size=12288\" node scripts/deploy.js --network preprod",
     "build": "npm run compile && npm test"
