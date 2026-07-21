@@ -1,6 +1,5 @@
 node_modules/
 dist/
-managed/
 *.log
 .env
 .DS_Store
