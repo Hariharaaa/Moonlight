@@ -1,0 +1,69 @@
+name: Midnight Counter CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js v22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run test suite
+        run: npm test
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            coverage/
+          if-no-files-found: ignore
+
+  compile-check:
+    name: Verify Contract Compiles
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Install Compact compiler
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf \
+            https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      - name: Install Compact toolchain version
+        run: compact update 0.31.1
+      
+      - name: Compile contract
+        run: compact compile --skip-zk contracts/counter.compact managed/
+      
+      - name: Verify managed/ directory created
+        run: |
+          ls -la managed/
+          test -d managed/zkir || (echo "ZK circuits not generated!" && exit 1)
+          echo "✅ Contract compiled successfully"
+      
+      - name: Upload compiled artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-contract
+          path: managed/
