@@ -6,7 +6,7 @@
 
 | Network | Address |
 |---------|---------|
-| **Local Devnet** ✅ | `0b49fa994b3d5c009b7a202d4e30d66c58f7c0f562c78532b40fa28fa3f78025` |
+| **Local Devnet** ✅ | `f689a211f852ef2c7b01addfe4298b03d09b3130729a2603d32a8187b4b89f7f` |
 | Preview | *Pending faucet refill — [faucet](https://midnight-tmnight-preview.nethermind.dev)* |
 | Preprod | *Pending faucet refill — [faucet](https://midnight-tmnight-preprod.nethermind.dev)* |
 
@@ -181,7 +181,7 @@ Expected output:
 
   ✅ Contract deployed successfully!
 
-  Contract Address: 0b49fa994b3d5c009b7a202d4e30d66c58f7c0f562c78532b40fa28fa3f78025
+  Contract Address: f689a211f852ef2c7b01addfe4298b03d09b3130729a2603d32a8187b4b89f7f
 ```
 
 ### 8. Deploy to Preview Network (requires faucet)

@@ -3,7 +3,7 @@
   "deployments": {
     "local-devnet": {
       "network": "undeployed",
-      "contractAddress": "0b49fa994b3d5c009b7a202d4e30d66c58f7c0f562c78532b40fa28fa3f78025",
+      "contractAddress": "f689a211f852ef2c7b01addfe4298b03d09b3130729a2603d32a8187b4b89f7f",
       "deployer": "mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s",
       "deployedAt": "2026-07-22T16:27:56.234Z",
       "compactCompilerVersion": "0.5.1 (compiler 0.31.1)",
