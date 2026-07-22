@@ -6,10 +6,11 @@
 
 | Network | Address |
 |---------|---------|
-| Preview | [PASTE ADDRESS AFTER DEPLOY] |
-| Preprod | [PASTE ADDRESS AFTER DEPLOY] |
+| Preview | **PENDING FAUCET REFILL** |
+| Preprod | **PENDING FAUCET REFILL** |
 
-> ⚠️ **Note**: This section will be updated after deployment. See Step 3 of Setup below.
+> ⚠️ **Note on Deployment Block**: As of July 2026, the official Midnight Preview and Preprod Faucets are returning an `"Insufficient Funds to move 5000000000"` error, meaning the testnet distribution wallets are completely empty. The contract is fully compiled and ready to deploy once the network administrators refill the faucets.
+
 
 ---
 
