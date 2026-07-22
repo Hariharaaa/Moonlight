@@ -9,7 +9,7 @@
 | Preview | **PENDING FAUCET REFILL** |
 | Preprod | **PENDING FAUCET REFILL** |
 
-> ⚠️ **Note on Deployment Block**: As of July 2026, the official Midnight Preview and Preprod Faucets are returning an `"Insufficient Funds to move 5000000000"` error, meaning the testnet distribution wallets are completely empty. The contract is fully compiled and ready to deploy once the network administrators refill the faucets.
+> ⚠️ **Public Faucet Note**: The Midnight Preview and Preprod faucets can be unavailable or empty. If the faucet page shows `Services are currently unavailable`, that is a public faucet outage, not a problem with this repository, your wallet address, or the contract. Use the local devnet workflow below while waiting for the public faucet to recover.
 
 
 ---
@@ -96,7 +96,27 @@ node --version  # Should show v22.x.x
 npm install
 ```
 
-### 4. Start the Midnight Proof Server
+### 4. Use the Local Midnight Devnet
+
+The reliable path for development is the bundled local devnet in `mn-demo`.
+It uses a pre-funded genesis wallet, so you do not need the public faucet.
+
+```bash
+cd mn-demo
+npm install
+npm run setup -- --network undeployed
+npm run test:e2e
+```
+
+Switch back to local devnet any time:
+
+```bash
+cd mn-demo
+npm run network undeployed
+npm run setup -- --network undeployed
+```
+
+### 5. Start the Midnight Proof Server Manually
 
 ```bash
 # Pull the Docker image
@@ -106,20 +126,20 @@ docker pull midnightnetwork/proof-server
 docker run -p 6300:6300 midnightnetwork/proof-server
 ```
 
-### 5. Compile the contract
+### 6. Compile the contract
 
 ```bash
 compact compile contracts/counter.compact
 # Output: managed/ directory with circuits and keys
 ```
 
-### 6. Deploy to Preview Network
+### 7. Deploy to Preview Network
 
 ```bash
 NODE_OPTIONS="--max-old-space-size=12288" npm run deploy:preview
 ```
 
-> 💡 When the wallet address prints, fund it at the [Midnight Preview Faucet](https://faucet.midnight.network) before continuing.
+> Public Preview requires faucet tNIGHT. If the faucet shows `Services are currently unavailable`, wait for Midnight/Nethermind to restore it, use a wallet seed that is already funded, or continue on local devnet with `cd mn-demo && npm run setup -- --network undeployed`.
 
 ---
 
