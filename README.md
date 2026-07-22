@@ -6,8 +6,9 @@
 
 | Network | Address |
 |---------|---------|
-| Preview | **PENDING FAUCET REFILL** |
-| Preprod | **PENDING FAUCET REFILL** |
+| **Local Devnet** ✅ | `0b49fa994b3d5c009b7a202d4e30d66c58f7c0f562c78532b40fa28fa3f78025` |
+| Preview | *Pending faucet refill — [faucet](https://midnight-tmnight-preview.nethermind.dev)* |
+| Preprod | *Pending faucet refill — [faucet](https://midnight-tmnight-preprod.nethermind.dev)* |
 
 > ⚠️ **Public Faucet Note**: The Midnight Preview and Preprod faucets can be unavailable or empty. If the faucet page shows `Services are currently unavailable`, that is a public faucet outage, not a problem with this repository, your wallet address, or the contract. Use the local devnet workflow below while waiting for the public faucet to recover.
 
@@ -129,17 +130,69 @@ docker run -p 6300:6300 midnightnetwork/proof-server
 ### 6. Compile the contract
 
 ```bash
-compact compile contracts/counter.compact
-# Output: managed/ directory with circuits and keys
+compact compile contracts/counter.compact managed/
+# Compiling 3 circuits:
+# Output: managed/zkir/, managed/keys/, managed/contract/
 ```
 
-### 7. Deploy to Preview Network
+Expected output:
+```
+Compiling 3 circuits:
+```
+
+Generated artifacts:
+```
+managed/
+├── compiler/contract-info.json   ← compiler metadata
+├── contract/index.js             ← compiled contract JS
+├── keys/
+│   ├── increment.prover          ← proving key
+│   ├── increment.verifier        ← verifying key
+│   ├── increment_by.prover
+│   ├── increment_by.verifier
+│   ├── reset.prover
+│   └── reset.verifier
+└── zkir/
+    ├── increment.zkir            ← ZK IR (human-readable)
+    ├── increment_by.zkir
+    └── reset.zkir
+```
+
+### 7. Deploy to Local Devnet
 
 ```bash
-NODE_OPTIONS="--max-old-space-size=12288" npm run deploy:preview
+# Start the devnet and proof server
+cd mn-demo
+docker compose up -d
+# Wait for proof-server to download SRS parameters (~60s first run)
+
+# Deploy counter contract
+npx tsx src/deploy-counter.ts --network undeployed
 ```
 
-> Public Preview requires faucet tNIGHT. If the faucet shows `Services are currently unavailable`, wait for Midnight/Nethermind to restore it, use a wallet seed that is already funded, or continue on local devnet with `cd mn-demo && npm run setup -- --network undeployed`.
+Expected output:
+```
+╔══════════════════════════════════════════════════════════════╗
+║  Deploy mn-demo to undeployed
+╚══════════════════════════════════════════════════════════════╝
+
+  Wallet Address: mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s
+  Balance: 250,000,000,000,000 tNight
+
+  ✅ Contract deployed successfully!
+
+  Contract Address: 0b49fa994b3d5c009b7a202d4e30d66c58f7c0f562c78532b40fa28fa3f78025
+```
+
+### 8. Deploy to Preview Network (requires faucet)
+
+```bash
+cd mn-demo
+npx tsx src/deploy-counter.ts --network preview
+```
+
+> Public Preview requires faucet tNIGHT. If the faucet shows `Services are currently unavailable`,
+> use local devnet (step 7) or set a funded `MIDNIGHT_WALLET_SEED` env var.
 
 ---
 
@@ -216,7 +269,55 @@ fullmoon-midnight-counter/
 
 ## Screenshots
 
-[LEAVE PLACEHOLDER — I will add compile output and contract address screenshots]
+### Screenshot 1 — Compile Output
+
+Run the compile command and capture the terminal output:
+
+```bash
+compact compile contracts/counter.compact managed/
+```
+
+Expected terminal output to screenshot:
+```
+Compiling 3 circuits:
+```
+
+Followed by `find managed/ -type f | sort` showing all 16 generated artifacts:
+```
+managed/compiler/contract-info.json
+managed/contract/index.d.ts
+managed/contract/index.js
+managed/contract/index.js.map
+managed/keys/increment.prover
+managed/keys/increment.verifier
+managed/keys/increment_by.prover
+managed/keys/increment_by.verifier
+managed/keys/reset.prover
+managed/keys/reset.verifier
+managed/zkir/increment.bzkir
+managed/zkir/increment.zkir
+managed/zkir/increment_by.bzkir
+managed/zkir/increment_by.zkir
+managed/zkir/reset.bzkir
+managed/zkir/reset.zkir
+```
+
+> 📸 **Take screenshot here** — capture both the `Compiling 3 circuits:` line and the `find managed/ -type f` tree.
+
+### Screenshot 2 — Deployed Contract Address
+
+Run the local devnet deployment and capture the terminal output:
+
+```bash
+cd mn-demo && npx tsx src/deploy-counter.ts --network undeployed
+```
+
+Verified contract address (local devnet):
+```
+Contract Address: 0b49fa994b3d5c009b7a202d4e30d66c58f7c0f562c78532b40fa28fa3f78025
+```
+
+> 📸 **Take screenshot here** — capture the `✅ Contract deployed successfully!` line and the contract address.
 
 ---
 

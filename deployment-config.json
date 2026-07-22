@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "deployments": {
+    "local-devnet": {
+      "network": "undeployed",
+      "contractAddress": "0b49fa994b3d5c009b7a202d4e30d66c58f7c0f562c78532b40fa28fa3f78025",
+      "deployer": "mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s",
+      "deployedAt": "2026-07-22T16:27:56.234Z",
+      "compactCompilerVersion": "0.5.1 (compiler 0.31.1)",
+      "runtimeVersion": "0.16.0",
+      "sdkVersion": "4.1.1",
+      "contractSource": "contracts/counter.compact",
+      "circuits": ["increment_by", "increment", "reset"],
+      "note": "Deployed to local Midnight devnet (mn-demo-devnet). For Preview/Preprod deployment, fund the wallet from the faucet and run: npm run deploy:preview or npm run deploy:preprod"
+    },
+    "preview": {
+      "network": "preview",
+      "contractAddress": "PENDING_FAUCET_REFILL",
+      "faucet": "https://midnight-tmnight-preview.nethermind.dev",
+      "note": "Faucet outage at time of submission. Local devnet deployment is the verified deployment for Level 1 submission."
+    },
+    "preprod": {
+      "network": "preprod",
+      "contractAddress": "PENDING_FAUCET_REFILL",
+      "faucet": "https://midnight-tmnight-preprod.nethermind.dev",
+      "note": "Faucet outage at time of submission. Local devnet deployment is the verified deployment for Level 1 submission."
+    }
+  }
+}
