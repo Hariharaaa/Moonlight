@@ -190,7 +190,7 @@ fullmoon-midnight-counter/
 
 ## Initial Idea
 
-[LEAVE PLACEHOLDER — I will fill this in manually]
+**FullMoon** is designed to serve as a privacy-preserving polling and counting mechanism where users can submit votes or increment a tally without revealing the exact weight of their contribution to the public. By utilizing Midnight's ZK circuits and the `disclose()` function, the contract publicly tracks the total aggregate score and the number of participants on-chain, while keeping individual increment amounts completely confidential. This serves as a foundational primitive for private DAOs, confidential voting systems, and hidden-score games.
 
 ---
 
