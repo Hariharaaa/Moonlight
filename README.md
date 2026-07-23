@@ -6,7 +6,7 @@
 
 | Network | Address |
 |---------|---------|
-| **Local Devnet** ✅ | `f689a211f852ef2c7b01addfe4298b03d09b3130729a2603d32a8187b4b89f7f` |
+| **Local Devnet** ✅ | `9ce3d2d5e7669eac2d61b405f2944b738568b5c0e1b942be5607e9ae0846a55b` |
 | Preview | *Pending faucet refill — [faucet](https://midnight-tmnight-preview.nethermind.dev)* |
 | Preprod | *Pending faucet refill — [faucet](https://midnight-tmnight-preprod.nethermind.dev)* |
 
@@ -181,7 +181,7 @@ Expected output:
 
   ✅ Contract deployed successfully!
 
-  Contract Address: f689a211f852ef2c7b01addfe4298b03d09b3130729a2603d32a8187b4b89f7f
+  Contract Address: 9ce3d2d5e7669eac2d61b405f2944b738568b5c0e1b942be5607e9ae0846a55b
 ```
 
 ### 8. Deploy to Preview Network (requires faucet)
@@ -314,10 +314,14 @@ cd mn-demo && npx tsx src/deploy-counter.ts --network undeployed
 
 Verified contract address (local devnet):
 ```
-Contract Address: 0b49fa994b3d5c009b7a202d4e30d66c58f7c0f562c78532b40fa28fa3f78025
+Contract Address: 9ce3d2d5e7669eac2d61b405f2944b738568b5c0e1b942be5607e9ae0846a55b
 ```
 
 > 📸 **Take screenshot here** — capture the `✅ Contract deployed successfully!` line and the contract address.
+
+### Screenshot 3 — Wallet Connection
+
+![Wallet Connection](wallet-connection.png)
 
 ---
 
