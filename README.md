@@ -304,6 +304,8 @@ managed/zkir/reset.zkir
 
 > 📸 **Take screenshot here** — capture both the `Compiling 3 circuits:` line and the `find managed/ -type f` tree.
 
+![Compile Output](screenshot-1.png)
+
 ### Screenshot 2 — Deployed Contract Address
 
 Run the local devnet deployment and capture the terminal output:
@@ -318,6 +320,8 @@ Contract Address: 9ce3d2d5e7669eac2d61b405f2944b738568b5c0e1b942be5607e9ae0846a5
 ```
 
 > 📸 **Take screenshot here** — capture the `✅ Contract deployed successfully!` line and the contract address.
+
+![Deployed Contract Address](screenshot-2.png)
 
 ### Screenshot 3 — Wallet Connection
 
