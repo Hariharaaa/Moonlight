@@ -17,6 +17,8 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       'managed': path.resolve(__dirname, '../managed'),
+      // Fix Vercel's strict node_modules resolution for imports coming from outside the root directory
+      '@midnight-ntwrk/compact-runtime': path.resolve(__dirname, 'node_modules/@midnight-ntwrk/compact-runtime'),
       // Node.js polyfills
       buffer: 'buffer',
       stream: 'stream-browserify',
