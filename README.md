@@ -1,343 +1,71 @@
-# FullMoon Midnight Counter
+# FullMoon – Level 2: Waxing Crescent Submission
 
-> A privacy-preserving counter smart contract built on the Midnight Network — proving state transitions without revealing private inputs.
+Welcome to the **FullMoon** Level 2 submission! This project implements a fully functioning decentralized application (dApp) on the Midnight Network (Preprod), demonstrating selective disclosure using Zero-Knowledge proofs directly in the browser.
 
-## Contract Address
+## Features
 
-| Network | Address |
-|---------|---------|
-| **Local Devnet** ✅ | `9ce3d2d5e7669eac2d61b405f2944b738568b5c0e1b942be5607e9ae0846a55b` |
-| Preview | *Pending faucet refill — [faucet](https://midnight-tmnight-preview.nethermind.dev)* |
-| Preprod | *Pending faucet refill — [faucet](https://midnight-tmnight-preprod.nethermind.dev)* |
-
-> ⚠️ **Public Faucet Note**: The Midnight Preview and Preprod faucets can be unavailable or empty. If the faucet page shows `Services are currently unavailable`, that is a public faucet outage, not a problem with this repository, your wallet address, or the contract. Use the local devnet workflow below while waiting for the public faucet to recover.
-
+- **Connect Lace Wallet**: Seamless integration with the Lace browser extension via the Midnight DApp Connector API.
+- **Selective Disclosure**:
+  - **Private Increment**: Users increment the counter by a hidden amount. A ZK proof is generated in the browser to prove the amount is valid (≥ 1) without revealing the actual number.
+  - **Authorized Reset**: Users can reset the counter to zero by providing a secret authorization key. The key is never sent to the network.
+- **Glassmorphism UI**: A beautiful, modern interface reflecting the FullMoon aesthetic.
 
 ---
 
-## What This Does
+## 🚀 Live Demo & Contract Address
 
-**FullMoon Counter** is a zero-knowledge smart contract on the [Midnight Network](https://midnight.network) that lets users increment or reset a publicly visible counter — but keeps the *amount* of each increment completely private.
-
-- Anyone can **see** the current counter value on-chain
-- Only the user knows **by how much** they incremented it
-- The Midnight ZK proof system verifies the transition is valid without revealing the private input
-
-This demonstrates the core Midnight privacy primitive: **selective disclosure** via `disclose()`.
+- **Local Devnet Contract Address**: `94a3573f488c43f20ab3e73ab56ed63f4ecbac495092e9a7ba9e57cad344826a`
+- **Network**: `undeployed` (Local Devnet)
 
 ---
 
-## Privacy Model
+## How to Deploy and Run
 
-| Layer | What | Visibility |
-|-------|------|------------|
-| **PUBLIC** | `counter` — the current counter value | On-chain, visible to everyone |
-| **PRIVATE** | `increment_amount` — how much to increment by | Stays on user's device, never on-chain |
-| **PRIVATE** | `secret_reset_key` — key required to reset | Stays on user's device, never on-chain |
-| **PROVED** | That `new_counter == old_counter + increment_amount` | Verified by ZK proof, amount stays secret |
-| **DISCLOSED** | `disclose(counter)` anchors proof to current chain state | Prevents proof replay attacks |
+### 1. Deploying the Contract to Preprod
 
-### How `disclose()` is Used
+Because deploying to the public Preprod network requires funding a wallet with `tNIGHT` tokens via the Discord Faucet, you must deploy the contract manually:
 
-In the `increment` circuit:
-```compact
-const current: Uint<64> = disclose(counter);
-```
-This deliberately exposes the *current* counter value as a public circuit input, anchoring the ZK proof to on-chain state. Without this, a proof generated against an old state could be replayed.
+1. Open your terminal and navigate to the project directory:
+   ```bash
+   cd mn-demo
+   npm run deploy -- --network preprod
+   ```
+2. The script will generate a new wallet and print an address. It will then hang, waiting for funds.
+3. Copy the address and request funds from the **Midnight Discord Faucet**.
+4. Once the transaction clears, the script will automatically continue, deploy the contract, and print the **Contract Address**.
+5. Copy the Contract Address.
 
----
+### 2. Running the Frontend Locally
 
-## Tech Stack
+1. Update the contract address in the frontend:
+   Open `frontend/src/config/network.ts` and replace the placeholder `CONTRACT_ADDRESS` with your deployed Preprod address.
+2. Ensure you have the `managed` folder compiled. If not, run `compact compile` from the project root.
+3. Start the dev server:
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+4. Ensure your Lace wallet is set to **Preprod** network and is funded!
 
-| Component | Technology |
-|-----------|-----------|
-| **Blockchain** | [Midnight Network](https://midnight.network) |
-| **Smart Contract** | [Compact Language](https://docs.midnight.network) |
-| **Proof System** | Midnight Proof Server (Docker) |
-| **Runtime** | Node.js v22 |
-| **Container** | Docker (proof server) |
-| **Test Framework** | Jest + TypeScript |
-| **Compiler** | `@midnight-ntwrk/compact-compiler` |
+### 3. Deploying to Vercel
 
----
+The frontend is pre-configured with a `vercel.json` file to inject the required WebAssembly Cross-Origin Isolation headers (`Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy`).
 
-## Prerequisites
-
-Before running this project, ensure you have:
-
-- [ ] **Node.js v22+** — [Download](https://nodejs.org/) or install via `nvm install 22`
-- [ ] **Docker** — [Download Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [ ] **Compact Compiler** — `npm install -g @midnight-ntwrk/compact-compiler`
-- [ ] **Midnight Proof Server** — pulled via Docker (see Setup below)
-- [ ] **Git** — for cloning the repo
+1. Commit your changes and push them to a GitHub repository.
+2. Log into Vercel and import the repository.
+3. In the Build settings, make sure:
+   - **Framework Preset**: Vite
+   - **Root Directory**: `frontend`
+   - **Build Command**: `npm run build`
+4. Set the Environment Variable `VITE_NETWORK_ID` to `preprod` and `VITE_CONTRACT_ADDRESS` to your contract address in Vercel settings.
+5. Deploy!
 
 ---
 
-## Setup
+## 🔒 Privacy Model Claims (Proven without Shown)
 
-### 1. Clone the repository
+This application strictly adheres to the "Proven without Shown" philosophy:
 
-```bash
-git clone https://github.com/[YOUR_USERNAME]/fullmoon-midnight-counter.git
-cd fullmoon-midnight-counter
-```
-
-### 2. Switch to Node.js v22
-
-```bash
-# If using nvm:
-nvm install 22
-nvm use 22
-node --version  # Should show v22.x.x
-```
-
-### 3. Install dependencies
-
-```bash
-npm install
-```
-
-### 4. Use the Local Midnight Devnet
-
-The reliable path for development is the bundled local devnet in `mn-demo`.
-It uses a pre-funded genesis wallet, so you do not need the public faucet.
-
-```bash
-cd mn-demo
-npm install
-npm run setup -- --network undeployed
-npm run test:e2e
-```
-
-Switch back to local devnet any time:
-
-```bash
-cd mn-demo
-npm run network undeployed
-npm run setup -- --network undeployed
-```
-
-### 5. Start the Midnight Proof Server Manually
-
-```bash
-# Pull the Docker image
-docker pull midnightnetwork/proof-server
-
-# Run the proof server on port 6300
-docker run -p 6300:6300 midnightnetwork/proof-server
-```
-
-### 6. Compile the contract
-
-```bash
-compact compile contracts/counter.compact managed/
-# Compiling 3 circuits:
-# Output: managed/zkir/, managed/keys/, managed/contract/
-```
-
-Expected output:
-```
-Compiling 3 circuits:
-```
-
-Generated artifacts:
-```
-managed/
-├── compiler/contract-info.json   ← compiler metadata
-├── contract/index.js             ← compiled contract JS
-├── keys/
-│   ├── increment.prover          ← proving key
-│   ├── increment.verifier        ← verifying key
-│   ├── increment_by.prover
-│   ├── increment_by.verifier
-│   ├── reset.prover
-│   └── reset.verifier
-└── zkir/
-    ├── increment.zkir            ← ZK IR (human-readable)
-    ├── increment_by.zkir
-    └── reset.zkir
-```
-
-### 7. Deploy to Local Devnet
-
-```bash
-# Start the devnet and proof server
-cd mn-demo
-docker compose up -d
-# Wait for proof-server to download SRS parameters (~60s first run)
-
-# Deploy counter contract
-npx tsx src/deploy-counter.ts --network undeployed
-```
-
-Expected output:
-```
-╔══════════════════════════════════════════════════════════════╗
-║  Deploy mn-demo to undeployed
-╚══════════════════════════════════════════════════════════════╝
-
-  Wallet Address: mn_addr_undeployed1h3ssm5ru2t6eqy4g3she78zlxn96e36ms6pq996aduvmateh9p9sk96u7s
-  Balance: 250,000,000,000,000 tNight
-
-  ✅ Contract deployed successfully!
-
-  Contract Address: 9ce3d2d5e7669eac2d61b405f2944b738568b5c0e1b942be5607e9ae0846a55b
-```
-
-### 8. Deploy to Preview Network (requires faucet)
-
-```bash
-cd mn-demo
-npx tsx src/deploy-counter.ts --network preview
-```
-
-> Public Preview requires faucet tNIGHT. If the faucet shows `Services are currently unavailable`,
-> use local devnet (step 7) or set a funded `MIDNIGHT_WALLET_SEED` env var.
-
----
-
-## Run Tests
-
-```bash
-npm test
-```
-
-Expected output:
-```
-PASS tests/counter.test.ts
-  CounterContract — Circuit Logic
-    ✓ increment circuit correctly updates counter state
-    ✓ multiple increments accumulate correctly
-    ✓ increment circuit rejects zero increment (validates circuit constraint)
-  CounterContract — State Transitions
-    ✓ reset circuit transitions counter back to zero
-    ✓ full counter lifecycle: init → increment → increment → reset
-    ✓ get_counter circuit reads the correct public counter value
-  CounterContract — Privacy Guarantees
-    ✓ increment private input (incrementAmount) is never exposed in circuit outputs
-    ✓ reset private input (secretResetKey) is never exposed in circuit outputs
-    ✓ only explicitly disclosed values appear in public circuit outputs
-    ✓ after increment, new counter value equals old + private amount
-
-Test Suites: 1 passed, 1 total
-Tests:       10 passed, 10 total
-```
-
----
-
-## Contract Architecture
-
-```
-contracts/
-└── counter.compact       ← Compact ZK contract (source of truth)
-    ├── ledger { counter }           ← PUBLIC on-chain state
-    ├── circuit increment(private)   ← ZK increment proof
-    ├── circuit reset(private)       ← ZK reset proof
-    └── circuit get_counter()        ← Public read
-
-managed/                  ← Auto-generated by compact compile
-├── counter/
-│   ├── circuit_bytecode/ ← Compiled ZK circuits
-│   └── keys/            ← Proving & verifying keys
-```
-
----
-
-## File Structure
-
-```
-fullmoon-midnight-counter/
-├── contracts/
-│   └── counter.compact          ← Compact contract source
-├── managed/                     ← Auto-generated by compact compile
-├── src/                         ← Frontend (Level 2)
-├── tests/
-│   └── counter.test.ts          ← 10 passing tests
-├── .github/
-│   └── workflows/               ← CI/CD (Level 3)
-├── README.md                    ← This file
-└── package.json
-```
-
----
-
-## Initial Idea
-
-**FullMoon** is designed to serve as a privacy-preserving polling and counting mechanism where users can submit votes or increment a tally without revealing the exact weight of their contribution to the public. By utilizing Midnight's ZK circuits and the `disclose()` function, the contract publicly tracks the total aggregate score and the number of participants on-chain, while keeping individual increment amounts completely confidential. This serves as a foundational primitive for private DAOs, confidential voting systems, and hidden-score games.
-
----
-
-## Screenshots
-
-### Screenshot 1 — Compile Output
-
-Run the compile command and capture the terminal output:
-
-```bash
-compact compile contracts/counter.compact managed/
-```
-
-Expected terminal output to screenshot:
-```
-Compiling 3 circuits:
-```
-
-Followed by `find managed/ -type f | sort` showing all 16 generated artifacts:
-```
-managed/compiler/contract-info.json
-managed/contract/index.d.ts
-managed/contract/index.js
-managed/contract/index.js.map
-managed/keys/increment.prover
-managed/keys/increment.verifier
-managed/keys/increment_by.prover
-managed/keys/increment_by.verifier
-managed/keys/reset.prover
-managed/keys/reset.verifier
-managed/zkir/increment.bzkir
-managed/zkir/increment.zkir
-managed/zkir/increment_by.bzkir
-managed/zkir/increment_by.zkir
-managed/zkir/reset.bzkir
-managed/zkir/reset.zkir
-```
-
-> 📸 **Take screenshot here** — capture both the `Compiling 3 circuits:` line and the `find managed/ -type f` tree.
-
-![Compile Output](screenshot-1.png)
-
-### Screenshot 2 — Deployed Contract Address
-
-Run the local devnet deployment and capture the terminal output:
-
-```bash
-cd mn-demo && npx tsx src/deploy-counter.ts --network undeployed
-```
-
-Verified contract address (local devnet):
-```
-Contract Address: 9ce3d2d5e7669eac2d61b405f2944b738568b5c0e1b942be5607e9ae0846a55b
-```
-
-> 📸 **Take screenshot here** — capture the `✅ Contract deployed successfully!` line and the contract address.
-
-![Deployed Contract Address](screenshot-2.png)
-
-### Screenshot 3 — Wallet Connection
-
-![Wallet Connection](wallet-connection.png)
-
----
-
-## License
-
-MIT — see [LICENSE](LICENSE) for details.
-
----
-
-## Resources
-
-- [Midnight Network Docs](https://docs.midnight.network)
-- [Compact Language Reference](https://docs.midnight.network/develop/reference/compact)
-- [Rise In — Midnight Builder Challenge](https://www.risein.com)
-- [Midnight Preview Faucet](https://faucet.midnight.network)
+1. **Local Witnesses**: The `secretIncrement` amount and `secretResetKey` are treated as local witnesses. They are managed by the `levelPrivateStateProvider` using IndexedDB entirely in the browser.
+2. **Client-Side Proving**: When interacting with the contract, the DApp Connector and the `FetchZkConfigProvider` generate the ZK Proof using the WebAssembly runtime within the user's browser. 
+3. **Data Protection**: The actual values of the increment amount and the reset key **never** leave the user's device. Only the ZK Proof is submitted to the Midnight ledger, proving that the user holds a valid secret key or increment amount.
