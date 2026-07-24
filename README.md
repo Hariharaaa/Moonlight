@@ -12,6 +12,16 @@ Welcome to the **FullMoon** Level 2 submission! This project implements a fully 
 
 ---
 
+## 📸 Application Screenshots
+
+### Before Wallet Connection
+![Before Connection](./before-connection.png)
+
+### After Wallet Connection
+![After Connection](./after-connection.png)
+
+---
+
 ## 🚀 Live Demo & Contract Address
 
 - **Live Demo (Vercel)**: [https://moonlight-two-mu.vercel.app/](https://moonlight-two-mu.vercel.app/)
