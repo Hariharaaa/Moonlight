@@ -37,5 +37,5 @@ export const NETWORK_CONFIGS: Record<NetworkId, NetworkConfig> = {
 export const ACTIVE_NETWORK: NetworkId = (import.meta.env.VITE_NETWORK_ID as NetworkId) || 'undeployed';
 export const config = NETWORK_CONFIGS[ACTIVE_NETWORK];
 
-// From deployment-config.json (local devnet address)
-export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || '94a3573f488c43f20ab3e73ab56ed63f4ecbac495092e9a7ba9e57cad344826a';
+// From deployment-config.json (Preprod address)
+export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || 'a243dd4e83157f79eb8c1f700f9a774693a1ba0556b13da07bcfa2cc35baccd6';

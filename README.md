@@ -14,8 +14,8 @@ Welcome to the **FullMoon** Level 2 submission! This project implements a fully 
 
 ## 🚀 Live Demo & Contract Address
 
-- **Local Devnet Contract Address**: `94a3573f488c43f20ab3e73ab56ed63f4ecbac495092e9a7ba9e57cad344826a`
-- **Network**: `undeployed` (Local Devnet)
+- **Preprod Contract Address**: `a243dd4e83157f79eb8c1f700f9a774693a1ba0556b13da07bcfa2cc35baccd6`
+- **Network**: `preprod` (Midnight Testnet)
 
 ---
 
