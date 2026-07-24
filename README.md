@@ -1,4 +1,4 @@
-# FullMoon – Level 2: Waxing Crescent Submission
+# FullMoon
 
 Welcome to the **FullMoon** Level 2 submission! This project implements a fully functioning decentralized application (dApp) on the Midnight Network (Preprod), demonstrating selective disclosure using Zero-Knowledge proofs directly in the browser.
 
