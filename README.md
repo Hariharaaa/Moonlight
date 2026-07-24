@@ -14,8 +14,20 @@ Welcome to the **FullMoon** Level 2 submission! This project implements a fully 
 
 ## 🚀 Live Demo & Contract Address
 
+- **Live Demo (Vercel)**: [https://moonlight-two-mu.vercel.app/](https://moonlight-two-mu.vercel.app/)
 - **Preprod Contract Address**: `a243dd4e83157f79eb8c1f700f9a774693a1ba0556b13da07bcfa2cc35baccd6`
 - **Network**: `preprod` (Midnight Testnet)
+- **Demo Video**: [Link to Video] *(Replace this with your recorded demo video link)*
+
+---
+
+## ✅ Waxing Crescent Submission Checklist
+- [x] **Public GitHub repository with README**
+- [x] **Live demo link (Vercel)**
+- [x] **Deployed Preprod contract address (verifiable on-chain)**
+- [ ] **Demo video: wallet connect + a successful circuit call**
+- [x] **README documenting the privacy claim**
+- [x] **Minimum 8 meaningful commits**
 
 ---
 
