@@ -9,7 +9,8 @@ import { FetchZkConfigProvider } from '@midnight-ntwrk/midnight-js-fetch-zk-conf
 import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
 import { StateValue } from '@midnight-ntwrk/compact-runtime';
 import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
-import { config as networkConfig, CONTRACT_ADDRESS } from '../config/network';
+import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import { config as networkConfig, CONTRACT_ADDRESS, ACTIVE_NETWORK } from '../config/network';
 import { PRIVATE_STATE_ID } from '../hooks/usePrivateState';
 
 // In Vite, we've aliased 'managed' to our contract output directory.
@@ -100,6 +101,10 @@ export async function createProviders(walletApi: ConnectedAPI) {
 //   2. Build queryState using getPublicStates + the compiled ledger() decoder
 //
 export async function getContractInstance(walletApi: ConnectedAPI) {
+  // Required by Midnight SDK before wallet/contract operations
+  const networkString = ACTIVE_NETWORK.charAt(0).toUpperCase() + ACTIVE_NETWORK.slice(1);
+  setNetworkId(networkString); // e.g. "Preprod", "Preview", "Undeployed"
+
   const providers = await createProviders(walletApi);
 
   const compiledContract = CompiledContract.make('auction', AuctionContract.Contract).pipe(
