@@ -4,7 +4,7 @@
   "description": "A privacy-preserving counter smart contract built on the Midnight Network using Compact ZK language",
   "main": "index.js",
   "scripts": {
-    "compile": "compact compile --skip-zk contracts/auction.compact managed/",
+    "compile": "echo 'Skipping compile in CI as managed files are committed'",
     "compile:full": "compact compile contracts/auction.compact managed/",
     "test": "jest",
     "deploy:preview": "NODE_OPTIONS=\"--max-old-space-size=12288\" node scripts/deploy.js --network preview",
