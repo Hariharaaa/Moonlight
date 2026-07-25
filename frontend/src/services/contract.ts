@@ -1,4 +1,7 @@
-import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
+import {
+  createCircuitCallTxInterface,
+  getPublicStates,
+} from '@midnight-ntwrk/midnight-js-contracts';
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
@@ -18,13 +21,12 @@ import * as AuctionContract from 'managed/contract';
 //   {origin}/keys/<circuitId>.verifier
 //   {origin}/zkir/<circuitId>.bzkir
 //
-// The Midnight.js SDK passes circuit IDs as "<contractName>#<circuitName>"
-// (e.g. "auction#bid") but assertSafeName() rejects the '#' character.
-// We strip the contract-name prefix before fetching the files.
+// The SDK passes circuit IDs as "<contractName>#<circuitName>"
+// (e.g. "auction#bid"), but assertSafeName() rejects '#'.
+// We strip the contract-name prefix before fetching.
 //
 class AuctionZkConfigProvider extends FetchZkConfigProvider {
   private stripPrefix(circuitId: string): string {
-    // "auction#bid" → "bid"
     return circuitId.includes('#') ? circuitId.split('#').pop()! : circuitId;
   }
 
@@ -41,18 +43,7 @@ class AuctionZkConfigProvider extends FetchZkConfigProvider {
   }
 }
 
-// ── Promise timeout helper ────────────────────────────────────────────
-function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(message)), ms)
-    ),
-  ]);
-}
-
 export async function createProviders(walletApi: ConnectedAPI) {
-  // Get wallet configuration directly from the DApp connector
   const serviceUris = await walletApi.getConfiguration();
   const shielded = await walletApi.getShieldedAddresses();
   const unshielded = await walletApi.getUnshieldedAddress();
@@ -60,7 +51,6 @@ export async function createProviders(walletApi: ConnectedAPI) {
   const coinPublicKey = shielded.shieldedCoinPublicKey;
   const encryptionPublicKey = shielded.shieldedEncryptionPublicKey;
 
-  // Wallet provider implementation that delegates to the DApp Connector
   const walletProvider = {
     getCoinPublicKey: () => coinPublicKey,
     getEncryptionPublicKey: () => encryptionPublicKey,
@@ -71,39 +61,40 @@ export async function createProviders(walletApi: ConnectedAPI) {
     submitTx: async (tx: any) => walletApi.submitTransaction(tx),
   };
 
-  // ZK Config Provider — uses our subclass that strips the "auction#" prefix
-  // Files are served at: /keys/<name>.verifier and /zkir/<name>.bzkir
-  const zkConfigProvider = new AuctionZkConfigProvider(window.location.origin, fetch.bind(window));
+  const zkConfigProvider = new AuctionZkConfigProvider(
+    window.location.origin,
+    fetch.bind(window)
+  );
+
+  const indexerUri = serviceUris.indexerUri || networkConfig.indexer;
+  const indexerWsUri = serviceUris.indexerWsUri || networkConfig.indexerWS;
+  const proverUri = serviceUris.proverServerUri || networkConfig.proofServer;
+
+  const publicDataProvider = indexerPublicDataProvider(indexerUri, indexerWsUri);
 
   return {
-    // 1. Private State Provider (Local Browser Storage)
     privateStateProvider: levelPrivateStateProvider({
       privateStateStoreName: 'auction-private-state',
       accountId: unshielded.unshieldedAddress,
       privateStoragePasswordProvider: async () => 'midnight-auction-password',
     }),
-
-    // 2. Public Data Provider (Indexer)
-    publicDataProvider: indexerPublicDataProvider(
-      serviceUris.indexerUri || networkConfig.indexer,
-      serviceUris.indexerWsUri || networkConfig.indexerWS
-    ),
-
-    // 3. ZK Config Provider
+    publicDataProvider,
     zkConfigProvider,
-
-    // 4. Proof Provider
-    proofProvider: httpClientProofProvider(
-      serviceUris.proverServerUri || networkConfig.proofServer,
-      zkConfigProvider
-    ),
-
-    // 5. Wallet Provider
+    proofProvider: httpClientProofProvider(proverUri, zkConfigProvider),
     walletProvider,
     midnightProvider: walletProvider,
   };
 }
 
+// ── getContractInstance ───────────────────────────────────────────────
+//
+// BYPASS findDeployedContract — it calls watchForDeployTxData which uses
+// a GraphQL subscription to watch the indexer and can hang indefinitely.
+//
+// Instead we:
+//   1. Build the callTx interface directly with createCircuitCallTxInterface
+//   2. Build queryState using getPublicStates + the compiled ledger() decoder
+//
 export async function getContractInstance(walletApi: ConnectedAPI) {
   const providers = await createProviders(walletApi);
 
@@ -111,22 +102,43 @@ export async function getContractInstance(walletApi: ConnectedAPI) {
     CompiledContract.withVacantWitnesses
   );
 
-  // findDeployedContract calls watchForDeployTxData which can hang if the
-  // indexer is slow. Wrap with a 30-second timeout to fail fast.
-  const deployed = await withTimeout(
-    findDeployedContract(providers as any, {
-      compiledContract: compiledContract as any,
-      contractAddress: CONTRACT_ADDRESS,
-      privateStateId: PRIVATE_STATE_ID,
-    }),
-    30_000,
-    `Timed out connecting to the Midnight indexer after 30 seconds. ` +
-    `Please check your internet connection and try again. ` +
-    `Contract address: ${CONTRACT_ADDRESS}`
+  // Register contract address with the private state provider
+  providers.privateStateProvider.setContractAddress(CONTRACT_ADDRESS);
+
+  // Build the call interface directly — no WebSocket subscription needed
+  const rawCallTx = createCircuitCallTxInterface(
+    providers as any,
+    compiledContract as any,
+    CONTRACT_ADDRESS,
+    PRIVATE_STATE_ID
   );
 
-  return {
-    deployed,
-    providers,
+  // createCircuitCallTxInterface keys circuits by their full ID (e.g. "auction#bid").
+  // Normalise to short names so AuctionPanel can call callTx.bid(...) etc.
+  const callTx: Record<string, any> = {};
+  for (const [key, fn] of Object.entries(rawCallTx as Record<string, any>)) {
+    const shortKey = key.includes('#') ? key.split('#').pop()! : key;
+    callTx[shortKey] = fn;
+  }
+
+
+  // Build a queryState function that reads live state from the indexer
+  const queryState = async () => {
+    const { contractState } = await getPublicStates(
+      providers.publicDataProvider as any,
+      CONTRACT_ADDRESS
+    );
+    // Use the compiled contract's ledger() decoder to get typed state
+    return AuctionContract.ledger(contractState.data);
   };
+
+  // Verify the contract is actually reachable before returning
+  await queryState();
+
+  const deployed = {
+    callTx,
+    queryState,
+  };
+
+  return { deployed, providers };
 }

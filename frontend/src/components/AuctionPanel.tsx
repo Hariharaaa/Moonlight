@@ -57,14 +57,22 @@ export const AuctionPanel: React.FC = () => {
     if (!contractInstance) return;
     try {
       const state = await contractInstance.queryState();
+      // state is the decoded ledger() object from the compiled contract.
+      // phase, highest_bid, highest_bidder are BigInt-like values.
       setPhase(Number(state.phase));
       setHighestBid(Number(state.highest_bid));
+      // highest_bidder is Bytes<32> — comes back as Uint8Array
       const bidderArray = state.highest_bidder;
-      setHighestBidder(Buffer.from(bidderArray).toString('hex'));
-      // Count bids from the map size
-      if (state.bids && typeof state.bids.size === 'number') {
-        setBidCount(state.bids.size);
+      if (bidderArray) {
+        setHighestBidder(Buffer.from(bidderArray).toString('hex'));
       }
+      // bids is a Map-like object; .size() is a method in the ledger decoder
+      try {
+        const sz = typeof state.bids?.size === 'function'
+          ? state.bids.size()
+          : (typeof state.bids?.size === 'number' ? state.bids.size : 0);
+        setBidCount(Number(sz));
+      } catch { /* size not available */ }
     } catch (err) {
       console.error('Error refreshing state:', err);
     }
