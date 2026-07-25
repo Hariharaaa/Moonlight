@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 import path from 'path';
 
 // https://vitejs.dev/config/
@@ -11,7 +12,21 @@ export default defineConfig({
     wasm(),
     // @ts-ignore
     topLevelAwait(),
-    react()
+    react(),
+    // Copy managed ZK artifacts (keys + zkir) into the public root so
+    // FetchZkConfigProvider can fetch them at /keys/<circuit>.verifier etc.
+    viteStaticCopy({
+      targets: [
+        {
+          src: '../managed/keys/*',
+          dest: 'keys',
+        },
+        {
+          src: '../managed/zkir/*.bzkir',
+          dest: 'zkir',
+        },
+      ],
+    }),
   ],
   resolve: {
     alias: {
@@ -31,6 +46,10 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    // Serve managed ZK artifacts during dev
+    fs: {
+      allow: ['..'],
+    },
   },
   optimizeDeps: {
     esbuildOptions: {
