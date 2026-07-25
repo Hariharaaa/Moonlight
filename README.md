@@ -14,7 +14,7 @@
 | **Live Demo** | [https://moonlight-two-mu.vercel.app/](https://moonlight-two-mu.vercel.app/) |
 | **Preprod Contract Address** | `d3a9182b9b58b653c8dbae9fc31422b0c217e3c8a7693293aa090e8e909d23fd` |
 | **Network** | Midnight Preprod Testnet |
-| **Demo Video** | [Google Drive](https://drive.google.com/file/d/1GKO3IBZi3JS7Gq21kjO6Akdlev1J52Qr/view?usp=drive_link) |
+| **Demo Video** | [Google Drive](https://drive.google.com/file/d/1b5HHdwg6ZxMUBo57-NNWj9-KEcrmtl0x/view?usp=sharing) |
 
 ---
 
