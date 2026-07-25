@@ -4,11 +4,11 @@ const path = require('path');
 // Extract arguments, e.g. --network preview
 const args = process.argv.slice(2);
 
-console.log('Deploying Counter Contract to Midnight Network...');
+console.log('Deploying Auction Contract to Midnight Network...');
 
 // Call the deployment script inside the mn-demo scaffolded project,
 // because it contains all the Midnight SDK networking and wallet logic.
-const result = spawnSync('npm', ['run', 'deploy:counter', '--', ...args], {
+const result = spawnSync('npm', ['run', 'deploy:auction', '--', ...args], {
   cwd: path.join(__dirname, '..', 'mn-demo'),
   stdio: 'inherit',
   shell: true,

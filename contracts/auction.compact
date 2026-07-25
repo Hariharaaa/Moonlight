@@ -34,12 +34,16 @@ export ledger highest_bidder: Bytes<32>;
 export ledger phase: Uint<8>; // 0: Bidding, 1: Reveal, 2: Closed
 
 // ── Circuit: bid ───────────────────────────────────────────────
-// Places a sealed bid. The user submits a commitment hash.
-// The actual bid amount and salt remain completely hidden.
-export circuit bid(bidder: Bytes<32>, commitment: Bytes<32>): [] {
+// Places a sealed bid. The user submits their amount and salt as
+// private witnesses. The circuit computes the commitment and
+// publicly stores only the commitment hash.
+export circuit bid(bidder: Bytes<32>, amount: Uint<64>, salt: Bytes<32>): [] {
   // Must be in Bidding phase (0)
   const current_phase = disclose(phase);
   assert(current_phase == 0, "Auction is not in the bidding phase");
+
+  // Compute commitment
+  const commitment = persistentHash<Vector<2, Bytes<32>>>([amount as Bytes<32>, salt]);
 
   // Record the bid commitment
   bids.insert(disclose(bidder), disclose(commitment));

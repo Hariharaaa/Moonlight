@@ -1,0 +1,6 @@
+pragma language_version >= 0.14.0;
+import CompactStandardLibrary;
+export ledger bids: Map<Bytes<32>, Bytes<32>>;
+export circuit place_bid(bidder: Bytes<32>, commitment: Bytes<32>): [] {
+  bids.insert(bidder, commitment);
+}

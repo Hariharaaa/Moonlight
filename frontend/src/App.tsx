@@ -1,5 +1,5 @@
 import { WalletButton } from './components/WalletButton';
-import { CounterPanel } from './components/CounterPanel';
+import { AuctionPanel } from './components/AuctionPanel';
 
 function App() {
   return (
@@ -14,17 +14,17 @@ function App() {
 
       <main className="app-main">
         <div className="hero">
-          <h2>Privacy-Preserving ZK Counter</h2>
+          <h2>Sealed-Bid ZK Auction</h2>
           <p>
-            Experience selective disclosure on the Midnight Network. Increment the counter or authorize a reset without ever revealing your inputs to the blockchain.
+            Experience true privacy on the Midnight Network. Place a bid without revealing the amount, and only the winning bid gets revealed on-chain. Losing bids remain mathematically secret forever!
           </p>
         </div>
 
-        <CounterPanel />
+        <AuctionPanel />
       </main>
 
       <footer className="app-footer">
-        <p>Built with ❤️ for the Midnight Builder Challenge - Level 2</p>
+        <p>Built with ❤️ for the Midnight Builder Challenge - Level 3 (Waxing Gibbous)</p>
       </footer>
     </div>
   );

@@ -1,0 +1,10 @@
+pragma language_version >= 0.14.0;
+import CompactStandardLibrary;
+
+export ledger highest: Uint<64>;
+
+export circuit reveal_if_highest(amount: Uint<64>): [] {
+  const curr = disclose(highest);
+  assert(amount > curr, "Not the highest bid");
+  highest = disclose(amount);
+}

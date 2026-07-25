@@ -35,13 +35,14 @@ class AuctionContractSimulator {
 
   /**
    * Circuit: bid
-   * PUBLIC: bidder, commitment
-   * PRIVATE: amount, salt (never leave the local machine, only hash is sent)
+   * PUBLIC: bidder
+   * PRIVATE: amount, salt (never leave the local machine)
    */
-  bid(bidder: string, commitment: string) {
+  bid(bidder: string, amount: bigint, salt: string) {
     if (this.state.phase !== 0) {
       throw new Error("Auction is not in the bidding phase");
     }
+    const commitment = AuctionContractSimulator.generateCommitment(amount, salt);
     this.state.bids.set(bidder, commitment);
   }
 
@@ -108,7 +109,7 @@ describe('Sealed-Bid Auction Contract', () => {
     const aliceCommitment = AuctionContractSimulator.generateCommitment(aliceAmount, aliceSalt);
 
     // 1. Bidding Phase
-    contract.bid(bidderAlice, aliceCommitment);
+    contract.bid(bidderAlice, aliceAmount, aliceSalt);
     expect(contract.getState().bids.has(bidderAlice)).toBe(true);
 
     // 2. Advance to Reveal Phase
@@ -127,12 +128,10 @@ describe('Sealed-Bid Auction Contract', () => {
     const bidderBob = '0xBob';
 
     // Alice bids 200
-    const aliceCommitment = AuctionContractSimulator.generateCommitment(200n, 'saltA');
-    contract.bid(bidderAlice, aliceCommitment);
+    contract.bid(bidderAlice, 200n, 'saltA');
 
     // Bob bids 100 (a losing bid)
-    const bobCommitment = AuctionContractSimulator.generateCommitment(100n, 'saltB');
-    contract.bid(bidderBob, bobCommitment);
+    contract.bid(bidderBob, 100n, 'saltB');
 
     // Advance to Reveal Phase
     contract.advance_phase();
@@ -164,7 +163,7 @@ describe('Sealed-Bid Auction Contract', () => {
 
     // Charlie tries to sneak a bid in
     expect(() => {
-      contract.bid(bidderCharlie, charlieCommitment);
+      contract.bid(bidderCharlie, 50n, 'saltC');
     }).toThrow("Auction is not in the bidding phase");
   });
 
@@ -174,7 +173,7 @@ describe('Sealed-Bid Auction Contract', () => {
     const daveRealAmount = 300n;
     const daveCommitment = AuctionContractSimulator.generateCommitment(daveRealAmount, 'true_salt');
 
-    contract.bid(bidderDave, daveCommitment);
+    contract.bid(bidderDave, daveRealAmount, 'true_salt');
     contract.advance_phase();
 
     // Dave tries to cheat by revealing a higher amount

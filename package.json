@@ -9,6 +9,7 @@
     "test": "jest",
     "deploy:preview": "NODE_OPTIONS=\"--max-old-space-size=12288\" node scripts/deploy.js --network preview",
     "deploy:preprod": "NODE_OPTIONS=\"--max-old-space-size=12288\" node scripts/deploy.js --network preprod",
+    "deploy:local": "npm run compile && cd mn-demo && npm run build && node dist/deploy-auction.js --network localdev",
     "build": "npm run compile && npm test"
   },
   "keywords": [

@@ -1,13 +1,16 @@
-# FullMoon
+# FullMoon - Sealed-Bid ZK Auction
 
-Welcome to the **FullMoon** Level 2 submission! This project implements a fully functioning decentralized application (dApp) on the Midnight Network (Preprod), demonstrating selective disclosure using Zero-Knowledge proofs directly in the browser.
+[![CI Pipeline](https://github.com/Hariharaaa/Moonlight/actions/workflows/ci.yml/badge.svg)](https://github.com/Hariharaaa/Moonlight/actions/workflows/ci.yml)
+
+Welcome to the **FullMoon** Level 3 (Waxing Gibbous) submission! This project implements a **Sealed-Bid Auction** decentralized application (dApp) on the Midnight Network (Preprod), demonstrating true selective disclosure using Zero-Knowledge proofs directly in the browser.
 
 ## Features
 
 - **Connect Lace Wallet**: Seamless integration with the Lace browser extension via the Midnight DApp Connector API.
-- **Selective Disclosure**:
-  - **Private Increment**: Users increment the counter by a hidden amount. A ZK proof is generated in the browser to prove the amount is valid (≥ 1) without revealing the actual number.
-  - **Authorized Reset**: Users can reset the counter to zero by providing a secret authorization key. The key is never sent to the network.
+- **Selective Disclosure (Sealed-Bid Auction)**:
+  - **Private Bidding**: Users submit a cryptographic commitment to their bid. The actual bid amount and salt are never sent to the network.
+  - **Private Reveal**: During the reveal phase, losing bids are mathematically rejected by the ZK circuit *locally*, ensuring losing bid amounts remain secret forever.
+- **Continuous Integration**: Automated tests and compilation checks via GitHub Actions.
 - **Glassmorphism UI**: A beautiful, modern interface reflecting the FullMoon aesthetic.
 
 ---
@@ -31,13 +34,16 @@ Welcome to the **FullMoon** Level 2 submission! This project implements a fully 
 
 ---
 
-## ✅ Waxing Crescent Submission Checklist
+## ✅ Waxing Gibbous (Level 3) Submission Checklist
 - [x] **Public GitHub repository with README**
 - [x] **Live demo link (Vercel)**
 - [x] **Deployed Preprod contract address (verifiable on-chain)**
 - [x] **Demo video: wallet connect + a successful circuit call**
 - [x] **README documenting the privacy claim**
 - [x] **Minimum 8 meaningful commits**
+- [x] **Chosen Idea Implemented: Sealed-Bid Auction**
+- [x] **Test suite with 3+ passing tests**
+- [x] **GitHub Actions CI/CD Pipeline**
 
 ---
 
@@ -86,8 +92,9 @@ The frontend is pre-configured with a `vercel.json` file to inject the required 
 
 ## 🔒 Privacy Model Claims (Proven without Shown)
 
-This application strictly adheres to the "Proven without Shown" philosophy:
+This application strictly adheres to the "Proven without Shown" philosophy for a Sealed-Bid Auction:
 
-1. **Local Witnesses**: The `secretIncrement` amount and `secretResetKey` are treated as local witnesses. They are managed by the `levelPrivateStateProvider` using IndexedDB entirely in the browser.
-2. **Client-Side Proving**: When interacting with the contract, the DApp Connector and the `FetchZkConfigProvider` generate the ZK Proof using the WebAssembly runtime within the user's browser. 
-3. **Data Protection**: The actual values of the increment amount and the reset key **never** leave the user's device. Only the ZK Proof is submitted to the Midnight ledger, proving that the user holds a valid secret key or increment amount.
+1. **Local Witnesses**: The `bidAmount` and `bidSalt` are treated as local witnesses. They are managed by the `levelPrivateStateProvider` using IndexedDB and `localStorage` entirely in the browser.
+2. **Client-Side Proving**: When interacting with the contract, the DApp Connector generates the ZK Proof using the WebAssembly runtime within the user's browser. 
+3. **Data Protection (Bidding)**: The actual values of the bid amount and salt **never** leave the user's device during the Bidding phase. Only the hashed commitment is submitted to the Midnight ledger.
+4. **Data Protection (Revealing)**: During the Reveal phase, the ZK circuit asserts `amount > highest_bid`. If the user's bid is lower, the ZK proof generation fails *locally*. The losing bid amount is never broadcasted to the network, meaning participants do not learn each other's losing bids.

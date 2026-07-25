@@ -4,29 +4,55 @@ export type Witnesses<PS> = {
 }
 
 export type ImpureCircuits<PS> = {
-  increment_by(context: __compactRuntime.CircuitContext<PS>, amount_0: bigint): __compactRuntime.CircuitResults<PS, []>;
-  increment(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
-  reset(context: __compactRuntime.CircuitContext<PS>, key_0: bigint): __compactRuntime.CircuitResults<PS, []>;
+  bid(context: __compactRuntime.CircuitContext<PS>,
+      bidder_0: Uint8Array,
+      amount_0: bigint,
+      salt_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+  advance_phase(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
+  reveal(context: __compactRuntime.CircuitContext<PS>,
+         bidder_0: Uint8Array,
+         amount_0: bigint,
+         salt_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
 }
 
 export type ProvableCircuits<PS> = {
-  increment_by(context: __compactRuntime.CircuitContext<PS>, amount_0: bigint): __compactRuntime.CircuitResults<PS, []>;
-  increment(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
-  reset(context: __compactRuntime.CircuitContext<PS>, key_0: bigint): __compactRuntime.CircuitResults<PS, []>;
+  bid(context: __compactRuntime.CircuitContext<PS>,
+      bidder_0: Uint8Array,
+      amount_0: bigint,
+      salt_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+  advance_phase(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
+  reveal(context: __compactRuntime.CircuitContext<PS>,
+         bidder_0: Uint8Array,
+         amount_0: bigint,
+         salt_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
 }
 
 export type PureCircuits = {
 }
 
 export type Circuits<PS> = {
-  increment_by(context: __compactRuntime.CircuitContext<PS>, amount_0: bigint): __compactRuntime.CircuitResults<PS, []>;
-  increment(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
-  reset(context: __compactRuntime.CircuitContext<PS>, key_0: bigint): __compactRuntime.CircuitResults<PS, []>;
+  bid(context: __compactRuntime.CircuitContext<PS>,
+      bidder_0: Uint8Array,
+      amount_0: bigint,
+      salt_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
+  advance_phase(context: __compactRuntime.CircuitContext<PS>): __compactRuntime.CircuitResults<PS, []>;
+  reveal(context: __compactRuntime.CircuitContext<PS>,
+         bidder_0: Uint8Array,
+         amount_0: bigint,
+         salt_0: Uint8Array): __compactRuntime.CircuitResults<PS, []>;
 }
 
 export type Ledger = {
-  readonly counter: bigint;
-  readonly num_increments: bigint;
+  bids: {
+    isEmpty(): boolean;
+    size(): bigint;
+    member(key_0: Uint8Array): boolean;
+    lookup(key_0: Uint8Array): Uint8Array;
+    [Symbol.iterator](): Iterator<[Uint8Array, Uint8Array]>
+  };
+  readonly highest_bid: bigint;
+  readonly highest_bidder: Uint8Array;
+  readonly phase: bigint;
 }
 
 export type ContractReferenceLocations = any;

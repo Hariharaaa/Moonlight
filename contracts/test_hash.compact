@@ -1,0 +1,6 @@
+pragma language_version >= 0.14.0;
+import CompactStandardLibrary;
+export circuit test_hash(amount: Uint<64>, salt: Bytes<32>): Bytes<32> {
+  // Can't cast Uint<64> to Bytes<32> directly? Let's just hash them using a struct or directly
+  return persistentHash<Vector<2, Bytes<32>>>([amount as Bytes<32>, salt]);
+}
