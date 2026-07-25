@@ -45,7 +45,10 @@ export const AuctionPanel: React.FC = () => {
         })
         .catch(err => {
           console.error('Failed to bind contract:', err);
-          if (isMounted) setError('Failed to bind contract. Please check network and contract address.');
+          if (isMounted) {
+            const errorMsg = err instanceof Error ? err.message : String(err);
+            setError(`Failed to bind contract: ${errorMsg}. Check network config and console logs.`);
+          }
         });
     } else {
       setContract(null);
