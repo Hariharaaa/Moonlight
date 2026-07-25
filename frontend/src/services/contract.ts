@@ -67,9 +67,12 @@ export async function createProviders(walletApi: ConnectedAPI) {
     fetch.bind(window)
   );
 
-  const indexerUri = serviceUris.indexerUri || networkConfig.indexer;
-  const indexerWsUri = serviceUris.indexerWsUri || networkConfig.indexerWS;
-  const proverUri = serviceUris.proverServerUri || networkConfig.proofServer;
+  // FORCE use of our configured v4 indexer/prover.
+  // The wallet extension may return v1/v3 endpoints or mismatched nodes 
+  // that don't have our contract state.
+  const indexerUri = networkConfig.indexer;
+  const indexerWsUri = networkConfig.indexerWS;
+  const proverUri = networkConfig.proofServer;
 
   const publicDataProvider = indexerPublicDataProvider(indexerUri, indexerWsUri);
 
