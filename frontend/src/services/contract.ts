@@ -80,7 +80,7 @@ export async function createProviders(walletApi: ConnectedAPI) {
     privateStateProvider: levelPrivateStateProvider({
       privateStateStoreName: 'auction-private-state',
       accountId: unshielded.unshieldedAddress,
-      privateStoragePasswordProvider: async () => 'midnight-auction-password',
+      privateStoragePasswordProvider: async () => 'Midnight-Auction-Password-1!',
     }),
     publicDataProvider,
     zkConfigProvider,
