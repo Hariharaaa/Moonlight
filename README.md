@@ -28,7 +28,7 @@ Welcome to the **FullMoon** Level 3 (Waxing Gibbous) submission! This project im
 ## 🚀 Live Demo & Contract Address
 
 - **Live Demo (Vercel)**: [https://moonlight-two-mu.vercel.app/](https://moonlight-two-mu.vercel.app/)
-- **Preprod Contract Address**: `a243dd4e83157f79eb8c1f700f9a774693a1ba0556b13da07bcfa2cc35baccd6`
+- **Preprod Contract Address**: `d3a9182b9b58b653c8dbae9fc31422b0c217e3c8a7693293aa090e8e909d23fd`
 - **Network**: `preprod` (Midnight Testnet)
 - **Demo Video**: [Google Drive Link](https://drive.google.com/file/d/1GKO3IBZi3JS7Gq21kjO6Akdlev1J52Qr/view?usp=drive_link)
 

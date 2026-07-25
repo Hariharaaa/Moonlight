@@ -38,4 +38,4 @@ export const ACTIVE_NETWORK: NetworkId = (import.meta.env.VITE_NETWORK_ID as Net
 export const config = NETWORK_CONFIGS[ACTIVE_NETWORK];
 
 // From deployment-config.json (Preprod address)
-export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || 'a243dd4e83157f79eb8c1f700f9a774693a1ba0556b13da07bcfa2cc35baccd6';
+export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || 'd3a9182b9b58b653c8dbae9fc31422b0c217e3c8a7693293aa090e8e909d23fd';
