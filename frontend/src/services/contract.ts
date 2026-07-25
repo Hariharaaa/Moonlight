@@ -7,6 +7,7 @@ import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-p
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { FetchZkConfigProvider } from '@midnight-ntwrk/midnight-js-fetch-zk-config-provider';
 import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
+import { StateValue } from '@midnight-ntwrk/compact-runtime';
 import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
 import { config as networkConfig, CONTRACT_ADDRESS } from '../config/network';
 import { PRIVATE_STATE_ID } from '../hooks/usePrivateState';
@@ -128,8 +129,17 @@ export async function getContractInstance(walletApi: ConnectedAPI) {
       providers.publicDataProvider as any,
       CONTRACT_ADDRESS
     );
+    
+    // contractState.data is a ChargedState object.
+    // In Vite, module duplication can cause `instanceof` checks to fail inside the 
+    // generated ledger() function. We bypass this by serializing the internal 
+    // StateValue and deserializing it using the same compact-runtime instance.
+    const rawStateValue = (contractState.data as any).state;
+    const encodedBytes = rawStateValue.encode();
+    const safeStateValue = StateValue.decode(encodedBytes);
+    
     // Use the compiled contract's ledger() decoder to get typed state
-    return AuctionContract.ledger(contractState.data);
+    return AuctionContract.ledger(safeStateValue);
   };
 
   // Verify the contract is actually reachable before returning
