@@ -1,17 +1,27 @@
 import React from 'react';
-import { useWallet } from '../hooks/useWallet';
-import { ACTIVE_NETWORK } from '../config/network';
+import { useWalletContext } from '../context/WalletContext';
+import { ACTIVE_NETWORK, CONTRACT_ADDRESS } from '../config/network';
 
 export const WalletButton: React.FC = () => {
-  const { isConnected, isConnecting, address, error, connect, disconnect } = useWallet();
+  const { isConnected, isConnecting, address, error, connect, disconnect } = useWalletContext();
 
   const truncateAddress = (addr: string) => {
     if (!addr) return '';
     return `${addr.slice(0, 10)}...${addr.slice(-6)}`;
   };
 
+  // Deployment status badge: "UNDEPLOYED" only if the contract address is the zero hash
+  const isDeployed = CONTRACT_ADDRESS && CONTRACT_ADDRESS.replace(/0/g, '').length > 0;
+  const deployBadgeClass = isDeployed ? 'deploy-badge deployed' : 'deploy-badge undeployed';
+  const deployLabel = isDeployed ? `✓ DEPLOYED · ${ACTIVE_NETWORK.toUpperCase()}` : '⚠ UNDEPLOYED';
+
   return (
     <div className="wallet-container">
+      {/* Deployment status badge */}
+      <div className={deployBadgeClass} title={isDeployed ? `Contract: ${CONTRACT_ADDRESS}` : 'No contract address set'}>
+        {deployLabel}
+      </div>
+
       {error && (
         <div className="wallet-error">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -23,11 +33,11 @@ export const WalletButton: React.FC = () => {
           )}
         </div>
       )}
-      
+
       {!isConnected ? (
-        <button 
-          className="btn btn-primary" 
-          onClick={connect} 
+        <button
+          className="btn btn-primary"
+          onClick={connect}
           disabled={isConnecting}
         >
           {isConnecting ? (
@@ -36,7 +46,7 @@ export const WalletButton: React.FC = () => {
               Connecting...
             </>
           ) : (
-            'Connect Wallet'
+            '🌙 Connect Lace Wallet'
           )}
         </button>
       ) : (

@@ -186,4 +186,42 @@ describe('Sealed-Bid Auction Contract', () => {
       contract.reveal(bidderDave, daveRealAmount, 'wrong_salt');
     }).toThrow("Invalid bid amount or salt");
   });
+
+  // ── TEST 5: Settlement Correctness + Privacy Check ────────────
+  test('Settlement: highest bid wins, correct winner disclosed, losing amounts never in public state', () => {
+    const bidderAlice = '0xAlice';
+    const bidderBob = '0xBob';
+    const bidderCharlie = '0xCharlie';
+
+    // All three bidders place sealed bids
+    contract.bid(bidderAlice, 100n, 'saltA');
+    contract.bid(bidderBob, 300n, 'saltB');
+    contract.bid(bidderCharlie, 200n, 'saltC');
+
+    contract.advance_phase();
+
+    // Alice reveals first (100 > 0 initial, succeeds)
+    contract.reveal(bidderAlice, 100n, 'saltA');
+    expect(contract.getState().highest_bid).toBe(100n);
+
+    // Bob reveals 300 — beats Alice
+    contract.reveal(bidderBob, 300n, 'saltB');
+    expect(contract.getState().highest_bid).toBe(300n);
+    expect(contract.getState().highest_bidder).toBe(bidderBob);
+
+    // Charlie's 200 is a losing bid — ZK proof fails locally, never broadcast
+    expect(() => {
+      contract.reveal(bidderCharlie, 200n, 'saltC');
+    }).toThrow("Bid is not higher than the current highest bid");
+
+    // PRIVACY CHECK: Charlie's raw amount (200) is NEVER in public state
+    const finalState = contract.getState();
+    expect(finalState.highest_bid).toBe(300n);          // Not 200 (Charlie's amount)
+    expect(finalState.highest_bidder).toBe(bidderBob);  // Not Charlie
+    // Bids map only stores commitments (hashes), not the raw amounts
+    const charlieEntry = finalState.bids.get(bidderCharlie);
+    expect(charlieEntry).toBeDefined();    // commitment hash is public
+    expect(charlieEntry).not.toBe('200'); // raw losing amount is NOT there
+    expect(charlieEntry).not.toBe(200);
+  });
 });

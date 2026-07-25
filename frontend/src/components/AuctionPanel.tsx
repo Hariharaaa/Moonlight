@@ -1,26 +1,36 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getContractInstance } from '../services/contract';
-import { useWallet } from '../hooks/useWallet';
+import { useWalletContext } from '../context/WalletContext';
 import { usePrivateState } from '../hooks/usePrivateState';
 import { PrivacyBadge } from './PrivacyBadge';
+import { PrivacyExplainer } from './PrivacyExplainer';
+import { CountdownTimer } from './CountdownTimer';
+
+type ProofState = 'none' | 'proving' | 'bid' | 'reveal' | 'advance' | 'error';
 
 export const AuctionPanel: React.FC = () => {
-  const { api: walletApi, isConnected } = useWallet();
+  // ── BUG FIX: use shared context, not independent hook ──────────
+  const { api: walletApi, isConnected } = useWalletContext();
   const { bidAmount, setBidAmount, bidSalt, setBidSalt } = usePrivateState();
-  
+
   const [contract, setContract] = useState<any>(null);
-  
   const [phase, setPhase] = useState<number>(0);
   const [highestBid, setHighestBid] = useState<number>(0);
   const [highestBidder, setHighestBidder] = useState<string>('');
-  
+  const [bidCount, setBidCount] = useState<number>(0);
+
+  // Deadline: 10 minutes from now when component first loads with a contract
+  const [deadlineMs, setDeadlineMs] = useState<number | null>(null);
+
   const [isBidding, setIsBidding] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
-  
-  const [proofState, setProofState] = useState<'none' | 'bid' | 'reveal' | 'advance'>('none');
-  const [error, setError] = useState<string | null>(null);
 
+  const [proofState, setProofState] = useState<ProofState>('none');
+  const [error, setError] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
+
+  // ── Connect to Contract ────────────────────────────────────────
   useEffect(() => {
     let isMounted = true;
     if (walletApi && isConnected) {
@@ -29,11 +39,13 @@ export const AuctionPanel: React.FC = () => {
           if (isMounted) {
             setContract(deployed);
             refreshState(deployed);
+            // Set a 10-minute auction deadline from the moment contract is loaded
+            if (!deadlineMs) setDeadlineMs(Date.now() + 10 * 60 * 1000);
           }
         })
         .catch(err => {
-          console.error("Failed to bind contract:", err);
-          if (isMounted) setError("Failed to bind contract. Please check network and address.");
+          console.error('Failed to bind contract:', err);
+          if (isMounted) setError('Failed to bind contract. Please check network and contract address.');
         });
     } else {
       setContract(null);
@@ -47,33 +59,43 @@ export const AuctionPanel: React.FC = () => {
       const state = await contractInstance.queryState();
       setPhase(Number(state.phase));
       setHighestBid(Number(state.highest_bid));
-      // Bytes<32> comes back as Uint8Array
       const bidderArray = state.highest_bidder;
       setHighestBidder(Buffer.from(bidderArray).toString('hex'));
+      // Count bids from the map size
+      if (state.bids && typeof state.bids.size === 'number') {
+        setBidCount(state.bids.size);
+      }
     } catch (err) {
-      console.error("Error refreshing state:", err);
+      console.error('Error refreshing state:', err);
     }
   }, [contract]);
 
-  // Helper to get exactly 32 bytes for the user
+  // Poll for state updates every 15s when connected
+  useEffect(() => {
+    if (!contract) return;
+    const interval = setInterval(() => refreshState(), 15000);
+    return () => clearInterval(interval);
+  }, [contract, refreshState]);
+
   const getBidderBytes = useCallback(async (): Promise<Uint8Array> => {
-    if (!walletApi) throw new Error("Wallet not connected");
+    if (!walletApi) throw new Error('Wallet not connected');
     const addr = await walletApi.getUnshieldedAddress();
     const encoder = new TextEncoder();
     const data = encoder.encode(addr.unshieldedAddress);
-    // Hash to exactly 32 bytes
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     return new Uint8Array(hashBuffer);
   }, [walletApi]);
 
+  // ── Bid ───────────────────────────────────────────────────────
   const handleBid = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contract) return;
-    
+
     setIsBidding(true);
     setError(null);
-    setProofState('none');
-    
+    setTxHash(null);
+    setProofState('proving');
+
     try {
       const saltBytes = new Uint8Array(32);
       window.crypto.getRandomValues(saltBytes);
@@ -82,50 +104,66 @@ export const AuctionPanel: React.FC = () => {
 
       const bidderBytes = await getBidderBytes();
 
-      // bid(bidder: Bytes<32>, amount: Uint<64>, salt: Bytes<32>)
-      await contract.callTx.bid(bidderBytes, BigInt(bidAmount), saltBytes);
+      // 🔒 The amount and salt are private witnesses — never sent to network
+      const tx = await contract.callTx.bid(bidderBytes, BigInt(bidAmount), saltBytes);
+      setTxHash(typeof tx === 'string' ? tx : 'confirmed');
       await refreshState();
-      
+
       setProofState('bid');
-      setTimeout(() => setProofState('none'), 5000);
+      setTimeout(() => setProofState('none'), 8000);
     } catch (err: any) {
       console.error(err);
-      setError(err?.message || 'Transaction failed');
+      setError(err?.message || 'Transaction failed. See console for details.');
+      setProofState('error');
+      setTimeout(() => setProofState('none'), 5000);
     } finally {
       setIsBidding(false);
     }
   };
 
+  // ── Reveal ────────────────────────────────────────────────────
   const handleReveal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contract) return;
-    
+
     setIsRevealing(true);
     setError(null);
-    setProofState('none');
-    
+    setTxHash(null);
+    setProofState('proving');
+
     try {
       const bidderBytes = await getBidderBytes();
       const saltBytes = new Uint8Array(Buffer.from(bidSalt, 'hex'));
 
-      await contract.callTx.reveal(bidderBytes, BigInt(bidAmount), saltBytes);
+      const tx = await contract.callTx.reveal(bidderBytes, BigInt(bidAmount), saltBytes);
+      setTxHash(typeof tx === 'string' ? tx : 'confirmed');
       await refreshState();
-      
+
       setProofState('reveal');
-      setTimeout(() => setProofState('none'), 5000);
+      setTimeout(() => setProofState('none'), 8000);
     } catch (err: any) {
       console.error(err);
-      setError(err?.message || 'Reveal failed: Bid not high enough, or invalid local salt.');
+      const msg = err?.message || '';
+      if (msg.includes('not higher')) {
+        setError('🔒 ZK Proof rejected locally — your bid is not higher than the current highest. Your bid amount is mathematically protected and was never sent to the network.');
+      } else if (msg.includes('Invalid bid')) {
+        setError('Commitment mismatch. Did you place your bid in this session? Your saved amount and salt must match your original bid.');
+      } else {
+        setError(msg || 'Reveal failed. See console for details.');
+      }
+      setProofState('error');
+      setTimeout(() => setProofState('none'), 5000);
     } finally {
       setIsRevealing(false);
     }
   };
 
+  // ── Advance Phase ─────────────────────────────────────────────
   const handleAdvance = async () => {
     if (!contract) return;
     setIsAdvancing(true);
     setError(null);
-    setProofState('none');
+    setProofState('proving');
     try {
       await contract.callTx.advance_phase();
       await refreshState();
@@ -134,17 +172,23 @@ export const AuctionPanel: React.FC = () => {
     } catch (err: any) {
       console.error(err);
       setError(err?.message || 'Failed to advance phase');
+      setProofState('error');
+      setTimeout(() => setProofState('none'), 5000);
     } finally {
       setIsAdvancing(false);
     }
   };
 
+  // ── Empty states ───────────────────────────────────────────────
   if (!isConnected) {
     return (
       <div className="panel empty-state">
         <div className="moon-icon">🌕</div>
         <h2>Connect Wallet to Begin</h2>
-        <p>You need to connect Lace wallet to interact with the Sealed-Bid Auction.</p>
+        <p>Connect your Lace browser wallet to interact with the Sealed-Bid Auction on the Midnight Network.</p>
+        <div className="privacy-explainer-hint">
+          <PrivacyExplainer />
+        </div>
       </div>
     );
   }
@@ -154,112 +198,189 @@ export const AuctionPanel: React.FC = () => {
       <div className="panel empty-state">
         <div className="spinner large"></div>
         <h2>Loading Contract...</h2>
-        <p>Binding to the Midnight Network.</p>
+        {error ? (
+          <p className="error-text">{error}</p>
+        ) : (
+          <p>Binding to the Midnight Network. This may take a few moments…</p>
+        )}
       </div>
     );
   }
 
-  const phaseName = phase === 0 ? "Bidding" : phase === 1 ? "Reveal" : "Closed";
+  const phaseName = phase === 0 ? 'Bidding' : phase === 1 ? 'Reveal' : 'Closed';
+  const phaseEmoji = phase === 0 ? '🔒' : phase === 1 ? '🔓' : '🏆';
+  const isWinner = highestBidder && highestBidder !== '0'.repeat(64);
 
   return (
     <div className="panel counter-panel">
-      {error && <div className="error-banner">{error}</div>}
-      
-      <div className="state-display">
-        <div className="state-item">
-          <label>Auction Phase</label>
-          <div className="value glow">{phaseName}</div>
+      {/* ── Error / Proof feedback ───────────────────────────── */}
+      {proofState === 'proving' && (
+        <div className="proving-banner">
+          <span className="spinner"></span>
+          <span>Generating Zero-Knowledge Proof locally… your private data never leaves your browser.</span>
         </div>
-        <div className="state-item sub">
-          <label>Highest Bid (Revealed)</label>
-          <div className="value">{highestBid}</div>
-          {highestBidder && highestBidder !== '0000000000000000000000000000000000000000000000000000000000000000' && (
-            <div style={{fontSize: '0.8rem', opacity: 0.7}}>Winner ID: {highestBidder.substring(0, 10)}...</div>
-          )}
-        </div>
-      </div>
-      
-      {phase < 2 && (
-        <div style={{textAlign: 'center', marginBottom: '20px'}}>
-          <button 
-            className="btn btn-outline" 
-            onClick={handleAdvance} 
-            disabled={isAdvancing}
-          >
-            {isAdvancing ? 'Advancing...' : `Simulate Time: Advance to Next Phase`}
-          </button>
+      )}
+      {error && proofState !== 'proving' && (
+        <div className="error-banner">
+          <strong>⚠ </strong>{error}
         </div>
       )}
 
+      {/* ── Auction status bar ───────────────────────────────── */}
+      <div className="state-display">
+        <div className="state-item">
+          <label>Auction Phase</label>
+          <div className="value glow phase-value">{phaseEmoji} {phaseName}</div>
+        </div>
+        <div className="state-item">
+          <label>🔒 Bids Received (Public)</label>
+          <div className="value bid-count">{bidCount}</div>
+          <small className="hint">Count is public; amounts are private</small>
+        </div>
+        {phase >= 1 && (
+          <div className="state-item">
+            <label>Highest Revealed Bid</label>
+            <div className="value">{highestBid > 0 ? `${highestBid} tNIGHT` : '—'}</div>
+            {isWinner && (
+              <div className="winner-id">
+                🏆 Winner: {highestBidder.substring(0, 8)}…
+              </div>
+            )}
+          </div>
+        )}
+        {deadlineMs && phase < 2 && (
+          <div className="state-item">
+            <label>⏱ Time Remaining</label>
+            <CountdownTimer deadlineMs={deadlineMs} phase={phase} />
+          </div>
+        )}
+      </div>
+
+      {/* ── Advance phase button (demo helper) ──────────────── */}
+      {phase < 2 && (
+        <div className="advance-row">
+          <button
+            className="btn btn-outline"
+            onClick={handleAdvance}
+            disabled={isAdvancing}
+          >
+            {isAdvancing ? 'Advancing…' : `⏭ Advance to ${phase === 0 ? 'Reveal' : 'Closed'} Phase`}
+          </button>
+          <span className="advance-hint">Demo helper — simulates time passing</span>
+        </div>
+      )}
+
+      {/* ── Privacy explainer toggle ─────────────────────────── */}
+      <PrivacyExplainer />
+
+      {/* ── Action cards ─────────────────────────────────────── */}
       <div className="actions-grid">
-        {/* Phase 0: Bid */}
-        <div className={`action-card ${phase !== 0 ? 'disabled' : ''}`}>
-          <h3>1. Place Sealed Bid</h3>
-          <p className="description">Submit a cryptographic commitment to your bid amount. The amount stays entirely on your local machine.</p>
-          
+        {/* PHASE 0: BID */}
+        <div className={`action-card ${phase !== 0 ? 'disabled' : 'active'}`}>
+          <div className="card-phase-badge">{phase === 0 ? 'Active' : 'Locked'}</div>
+          <h3>1. 🔒 Place Sealed Bid</h3>
+          <p className="description">
+            Submit a cryptographic commitment to your bid. Your actual amount and a random salt are hashed together — only the hash is stored on-chain. Your amount never leaves your device.
+          </p>
+
           <form onSubmit={handleBid}>
             <div className="input-group">
-              <label>Bid Amount</label>
-              <input 
-                type="number" 
-                min="1" 
-                value={bidAmount || ''} 
+              <label htmlFor="bid-amount">Bid Amount (tNIGHT)</label>
+              <input
+                id="bid-amount"
+                type="number"
+                min="1"
+                value={bidAmount || ''}
                 onChange={e => setBidAmount(Number(e.target.value))}
                 disabled={isBidding || phase !== 0}
-                placeholder="Enter amount"
+                placeholder="e.g. 150"
               />
+              <small className="input-hint">🔒 This value stays on your device — never sent to the network</small>
             </div>
-            
-            <button 
-              type="submit" 
-              className="btn btn-primary full-width" 
+
+            <button
+              type="submit"
+              id="place-bid-btn"
+              className="btn btn-primary full-width"
               disabled={isBidding || phase !== 0 || !bidAmount}
             >
-              {isBidding ? 'Generating ZK Commitment...' : 'Place Sealed Bid'}
+              {isBidding ? (
+                <><span className="spinner"></span> Generating ZK Commitment…</>
+              ) : '🔒 Place Sealed Bid'}
             </button>
           </form>
-          
-          <PrivacyBadge 
-            show={proofState === 'bid'} 
-            type="proof" 
-            message="Bid Commitment Stored!" 
-            details="Your bid amount and a locally generated salt were hashed. Only the hash was stored on the blockchain." 
+
+          <PrivacyBadge
+            show={proofState === 'bid'}
+            type="proof"
+            message="🔒 Proof Verified — Bid Commitment Stored!"
+            details="Your bid amount and a cryptographically secure random salt were hashed together using SHA-256. Only the resulting hash was submitted to the Midnight blockchain. The actual amount and salt remain exclusively on your device."
+            txHash={txHash}
           />
         </div>
 
-        {/* Phase 1: Reveal */}
-        <div className={`action-card ${phase !== 1 ? 'disabled' : ''}`}>
-          <h3>2. Reveal Bid</h3>
-          <p className="description">Attempt to reveal your bid. If it's a losing bid, the zero-knowledge proof will fail locally to protect your secret.</p>
-          
+        {/* PHASE 1: REVEAL */}
+        <div className={`action-card ${phase !== 1 ? 'disabled' : 'active'}`}>
+          <div className="card-phase-badge">{phase === 1 ? 'Active' : phase === 0 ? 'Waiting' : 'Done'}</div>
+          <h3>2. 🔓 Reveal Bid</h3>
+          <p className="description">
+            After the bidding deadline, reveal your bid to compete for the win. A ZK proof is generated locally — <strong>if your bid is not the highest, the proof generation fails and your amount is never sent to the network.</strong>
+          </p>
+
           <form onSubmit={handleReveal}>
             <div className="input-group">
-              <label>Saved Amount</label>
-              <input 
-                type="number" 
-                value={bidAmount || ''} 
+              <label>Your Saved Bid Amount</label>
+              <input
+                type="number"
+                value={bidAmount || ''}
                 disabled={true}
+                readOnly
               />
-              <small>Retrieved from local storage</small>
+              <small className="input-hint">Retrieved from local storage — {bidSalt ? '🔐 Salt saved' : '⚠ No salt found'}</small>
             </div>
-            
-            <button 
-              type="submit" 
-              className="btn btn-outline full-width" 
-              disabled={isRevealing || phase !== 1}
+
+            <button
+              type="submit"
+              id="reveal-bid-btn"
+              className="btn btn-outline full-width"
+              disabled={isRevealing || phase !== 1 || !bidSalt}
             >
-              {isRevealing ? 'Generating Reveal Proof...' : 'Reveal Bid'}
+              {isRevealing ? (
+                <><span className="spinner"></span> Generating Reveal Proof…</>
+              ) : '🔓 Reveal My Bid'}
             </button>
           </form>
 
-          <PrivacyBadge 
-            show={proofState === 'reveal'} 
-            type="authorization" 
-            message="Bid Revealed Successfully!" 
-            details="Your bid was verified against your earlier commitment AND proven to be higher than the current highest bid." 
+          <PrivacyBadge
+            show={proofState === 'reveal'}
+            type="authorization"
+            message="🏆 Bid Revealed — You're the Highest Bidder!"
+            details="Two things were proven simultaneously: (1) Your revealed amount matches your original commitment — proving you didn't change your bid. (2) Your amount is strictly higher than the previous highest bid — proving you deserve to win. All losing bids remain mathematically secret."
+            txHash={txHash}
           />
         </div>
       </div>
+
+      {/* ── Settlement result ─────────────────────────────────── */}
+      {phase === 2 && (
+        <div className="settlement-banner">
+          <div className="settlement-winner">
+            <div className="winner-crown">🏆</div>
+            <h3>Auction Settled</h3>
+            {isWinner ? (
+              <>
+                <div className="winner-amount">{highestBid} tNIGHT</div>
+                <div className="winner-address">Winner ID: {highestBidder.substring(0, 16)}…</div>
+              </>
+            ) : (
+              <p>No bids were revealed.</p>
+            )}
+          </div>
+          <div className="privacy-guarantee">
+            🔒 All losing bid amounts remain <strong>mathematically secret forever</strong>. They were never broadcast to the network.
+          </div>
+        </div>
+      )}
     </div>
   );
 };

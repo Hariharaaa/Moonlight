@@ -8,15 +8,18 @@ function App() {
         <div className="logo">
           <span className="moon">🌕</span>
           <h1>FullMoon</h1>
+          <span className="logo-sub">Sealed-Bid ZK Auction</span>
         </div>
         <WalletButton />
       </header>
 
       <main className="app-main">
         <div className="hero">
-          <h2>Sealed-Bid ZK Auction</h2>
+          <h2>Privacy-Preserving Auctions on Midnight</h2>
           <p>
-            Experience true privacy on the Midnight Network. Place a bid without revealing the amount, and only the winning bid gets revealed on-chain. Losing bids remain mathematically secret forever!
+            Bid without revealing your amount. Only the winning bid is ever disclosed on-chain.
+            Losing bids are rejected locally by a Zero-Knowledge circuit — they are mathematically
+            secret forever.
           </p>
         </div>
 
@@ -24,7 +27,11 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <p>Built with ❤️ for the Midnight Builder Challenge - Level 3 (Waxing Gibbous)</p>
+        <p>Built for the <strong>Midnight Builder Challenge — Level 3 (Waxing Gibbous)</strong> ·{' '}
+          <a href="https://moonlight-two-mu.vercel.app" target="_blank" rel="noopener noreferrer">Live Demo</a>
+          {' · '}
+          <a href="https://github.com/Hariharaaa/Moonlight" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </p>
       </footer>
     </div>
   );
