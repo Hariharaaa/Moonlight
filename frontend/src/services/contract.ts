@@ -109,6 +109,18 @@ export async function getContractInstance(walletApi: ConnectedAPI) {
   // Register contract address with the private state provider
   providers.privateStateProvider.setContractAddress(CONTRACT_ADDRESS);
 
+  // Initialize the private state if it doesn't exist (which findDeployedContract normally handles)
+  try {
+    await providers.privateStateProvider.get(PRIVATE_STATE_ID);
+  } catch (err: any) {
+    if (err?.message?.includes('No private state found')) {
+      await providers.privateStateProvider.set(PRIVATE_STATE_ID, {});
+    } else {
+      // In levelDB implementations, missing key often throws NotFoundError
+      await providers.privateStateProvider.set(PRIVATE_STATE_ID, {});
+    }
+  }
+
   // Build the call interface directly — no WebSocket subscription needed
   const rawCallTx = createCircuitCallTxInterface(
     providers as any,
