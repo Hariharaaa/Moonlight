@@ -5,6 +5,7 @@ import { usePrivateState } from '../hooks/usePrivateState';
 import { PrivacyBadge } from './PrivacyBadge';
 import { PrivacyExplainer } from './PrivacyExplainer';
 import { CountdownTimer } from './CountdownTimer';
+import { Buffer } from 'buffer';
 
 type ProofState = 'none' | 'proving' | 'bid' | 'reveal' | 'advance' | 'error';
 
