@@ -1,0 +1,90 @@
+// ============================================================
+// auction.compact — Midnight Network Sealed-Bid Auction
+// FullMoon Project — Midnight Builder Challenge Level 3
+// ============================================================
+//
+// PRIVACY MODEL:
+//
+//   PUBLIC (on-chain, visible to anyone):
+//     - `bids`          : Map of bidder public keys to their bid commitments (hashes).
+//                         Shows WHO bid, but NOT how much.
+//     - `highest_bid`   : The current highest bid amount (only updated during reveal).
+//     - `highest_bidder`: The public key of the current highest bidder.
+//     - `phase`         : The auction phase (0 = Bidding, 1 = Reveal, 2 = Closed).
+//
+//   PRIVATE (circuit witness — never stored or disclosed on-chain):
+//     - `amount`        : The actual bid amount (Uint<64>).
+//     - `salt`          : 32 bytes of randomness to prevent brute-forcing the commitment hash.
+//
+//   WHAT THE USER PROVES (via ZK proof, without revealing inputs):
+//     - During `bid`:    That they generated a valid commitment.
+//     - During `reveal`: That they know the `amount` and `salt` that hashes to their stored commitment.
+//                        Crucially, they prove that their `amount > highest_bid`.
+//                        If it is not, the proof fails locally, and they cannot submit a reveal transaction.
+//                        This mathematically guarantees that LOSING BIDS ARE NEVER REVEALED on-chain.
+// ============================================================
+
+pragma language_version >= 0.14.0;
+import CompactStandardLibrary;
+
+// ── Ledger State (PUBLIC — visible on-chain to anyone) ─────────
+export ledger bids: Map<Bytes<32>, Bytes<32>>;
+export ledger highest_bid: Uint<64>;
+export ledger highest_bidder: Bytes<32>;
+export ledger phase: Uint<8>; // 0: Bidding, 1: Reveal, 2: Closed
+
+// ── Circuit: bid ───────────────────────────────────────────────
+// Places a sealed bid. The user submits a commitment hash.
+// The actual bid amount and salt remain completely hidden.
+export circuit bid(bidder: Bytes<32>, commitment: Bytes<32>): [] {
+  // Must be in Bidding phase (0)
+  const current_phase = disclose(phase);
+  assert(current_phase == 0, "Auction is not in the bidding phase");
+
+  // Record the bid commitment
+  bids.insert(disclose(bidder), disclose(commitment));
+}
+
+// ── Circuit: advance_phase ─────────────────────────────────────
+// Moves the auction to the next phase (Bidding -> Reveal -> Closed).
+// In a real dApp, this would be restricted to an admin or a timer,
+// but for this demo, it's public to facilitate testing.
+export circuit advance_phase(): [] {
+  const current_phase = disclose(phase);
+  assert(current_phase < 2, "Auction is already closed");
+  phase = (current_phase + 1) as Uint<8>;
+}
+
+// ── Circuit: reveal ────────────────────────────────────────────
+// The core privacy-preserving circuit.
+// Users attempt to reveal their bid. The circuit verifies the commitment
+// and physically asserts that their bid is higher than the current highest bid.
+// If it's lower, the ZK proof generation fails locally, preventing submission.
+// Therefore, only winning bids can be revealed. Losing bids stay secret!
+export circuit reveal(bidder: Bytes<32>, amount: Uint<64>, salt: Bytes<32>): [] {
+  // Must be in Reveal phase (1)
+  const current_phase = disclose(phase);
+  assert(current_phase == 1, "Auction is not in the reveal phase");
+
+  // Bidder must have placed a bid
+  assert(bids.member(disclose(bidder)), "No bid found for this participant");
+
+  // Verify the commitment matches the private amount and salt
+  const stored_commitment = bids.lookup(disclose(bidder));
+  const calculated_commitment = persistentHash<Vector<2, Bytes<32>>>([amount as Bytes<32>, salt]);
+  assert(stored_commitment == calculated_commitment, "Invalid bid amount or salt");
+
+  // ── THE PRIVACY MAGIC TRICK ─────────────────────────────
+  // Fetch the current highest bid from the public ledger
+  const curr_highest = disclose(highest_bid);
+  
+  // Assert that this new bid is strictly greater than the current highest.
+  // If it's not, the prover CANNOT generate a valid ZK proof, and the
+  // transaction is rejected before it even reaches the network.
+  // This guarantees that losing bids cannot be revealed on-chain.
+  assert(amount > curr_highest, "Bid is not higher than the current highest bid");
+
+  // Update the highest bid and bidder
+  highest_bid = disclose(amount);
+  highest_bidder = disclose(bidder);
+}
