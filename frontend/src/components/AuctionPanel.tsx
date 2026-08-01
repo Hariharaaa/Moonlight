@@ -1,16 +1,35 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getContractInstance } from '../services/contract';
 import { useWalletContext } from '../context/WalletContext';
 import { usePrivateState } from '../hooks/usePrivateState';
 import { PrivacyBadge } from './PrivacyBadge';
 import { PrivacyExplainer } from './PrivacyExplainer';
 import { CountdownTimer } from './CountdownTimer';
+import { EscrowStatus } from './EscrowStatus';
+import { FeedbackPrompt } from './FeedbackPrompt';
 import { Buffer } from 'buffer';
 
 type ProofState = 'none' | 'proving' | 'bid' | 'reveal' | 'advance' | 'error';
+type EscrowPhase = 'none' | 'locked' | 'pending_reveal' | 'settled' | 'refunded';
+
+// ── Analytics state cache writer ─────────────────────────────────────
+// Writes live contract state to localStorage so AnalyticsDashboard can
+// read it without needing its own wallet connection.
+function cacheContractState(phase: number, highestBid: number, highestBidder: string, bidCount: number) {
+  try {
+    localStorage.setItem('fm_contract_state_cache', JSON.stringify({
+      phase, highestBid, highestBidder, bidCount, ts: Date.now(),
+    }));
+    // Also accumulate total bids into a running counter
+    const prev = parseInt(localStorage.getItem('fm_total_bids') || '0', 10);
+    if (bidCount > prev) {
+      localStorage.setItem('fm_total_bids', String(bidCount));
+    }
+  } catch { /* storage quota errors are non-fatal */ }
+}
 
 export const AuctionPanel: React.FC = () => {
-  // ── BUG FIX: use shared context, not independent hook ──────────
+  // ── Shared wallet context ─────────────────────────────────────────
   const { api: walletApi, isConnected } = useWalletContext();
   const { bidAmount, setBidAmount, bidSalt, setBidSalt } = usePrivateState();
 
@@ -19,8 +38,12 @@ export const AuctionPanel: React.FC = () => {
   const [highestBid, setHighestBid] = useState<number>(0);
   const [highestBidder, setHighestBidder] = useState<string>('');
   const [bidCount, setBidCount] = useState<number>(0);
+  const [escrowPhase, setEscrowPhase] = useState<EscrowPhase>('none');
+  const [hasBidThisSession, setHasBidThisSession] = useState(false);
+  const [showFeedbackPrompt, setShowFeedbackPrompt] = useState(false);
 
-  // Deadline: 10 minutes from now when component first loads with a contract
+  // ── STABILITY FIX: Use a ref for deadline so reconnect doesn't reset it ──
+  const deadlineMsRef = useRef<number | null>(null);
   const [deadlineMs, setDeadlineMs] = useState<number | null>(null);
 
   const [isBidding, setIsBidding] = useState(false);
@@ -31,25 +54,27 @@ export const AuctionPanel: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
 
-  // ── Connect to Contract ────────────────────────────────────────
+  // ── Connect to Contract ───────────────────────────────────────────
   useEffect(() => {
     let isMounted = true;
     if (walletApi && isConnected) {
       getContractInstance(walletApi)
         .then(({ deployed }) => {
-          if (isMounted) {
-            setContract(deployed);
-            refreshState(deployed);
-            // Set a 10-minute auction deadline from the moment contract is loaded
-            if (!deadlineMs) setDeadlineMs(Date.now() + 10 * 60 * 1000);
+          if (!isMounted) return;
+          setContract(deployed);
+          refreshState(deployed);
+          // Only set deadline once — don't reset on reconnect (STABILITY FIX)
+          if (!deadlineMsRef.current) {
+            const d = Date.now() + 10 * 60 * 1000;
+            deadlineMsRef.current = d;
+            setDeadlineMs(d);
           }
         })
         .catch(err => {
+          if (!isMounted) return;
           console.error('Failed to bind contract:', err);
-          if (isMounted) {
-            const errorMsg = err instanceof Error ? err.message : String(err);
-            setError(`Failed to bind contract: ${errorMsg}. Check network config and console logs.`);
-          }
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          setError(`Failed to bind contract: ${errorMsg}. Check network config and console logs.`);
         });
     } else {
       setContract(null);
@@ -57,26 +82,44 @@ export const AuctionPanel: React.FC = () => {
     return () => { isMounted = false; };
   }, [walletApi, isConnected]);
 
-  const refreshState = useCallback(async (contractInstance = contract) => {
-    if (!contractInstance) return;
+  // ── STABILITY FIX: refreshState always takes an explicit instance ─
+  const refreshState = useCallback(async (contractInstance?: any) => {
+    const instance = contractInstance ?? contract;
+    if (!instance) return;
     try {
-      const state = await contractInstance.queryState();
-      // state is the decoded ledger() object from the compiled contract.
-      // phase, highest_bid, highest_bidder are BigInt-like values.
-      setPhase(Number(state.phase));
-      setHighestBid(Number(state.highest_bid));
+      const state = await instance.queryState();
+      const newPhase = Number(state.phase);
+      const newHighestBid = Number(state.highest_bid);
+
       // highest_bidder is Bytes<32> — comes back as Uint8Array
-      const bidderArray = state.highest_bidder;
-      if (bidderArray) {
-        setHighestBidder(Buffer.from(bidderArray).toString('hex'));
+      let newBidder = '';
+      if (state.highest_bidder) {
+        newBidder = Buffer.from(state.highest_bidder).toString('hex');
       }
-      // bids is a Map-like object; .size() is a method in the ledger decoder
+
+      // bids map size
+      let newBidCount = 0;
       try {
         const sz = typeof state.bids?.size === 'function'
           ? state.bids.size()
           : (typeof state.bids?.size === 'number' ? state.bids.size : 0);
-        setBidCount(Number(sz));
-      } catch { /* size not available */ }
+        newBidCount = Number(sz);
+      } catch { /* size not available — leave at 0 */ }
+
+      setPhase(newPhase);
+      setHighestBid(newHighestBid);
+      setHighestBidder(newBidder);
+      setBidCount(newBidCount);
+
+      // Derive escrow phase from auction phase
+      setEscrowPhase(prev => {
+        if (newPhase === 2) return 'settled';
+        if (newPhase === 1 && prev === 'locked') return 'pending_reveal';
+        return prev;
+      });
+
+      // Write to localStorage for AnalyticsDashboard
+      cacheContractState(newPhase, newHighestBid, newBidder, newBidCount);
     } catch (err) {
       console.error('Error refreshing state:', err);
     }
@@ -98,7 +141,7 @@ export const AuctionPanel: React.FC = () => {
     return new Uint8Array(hashBuffer);
   }, [walletApi]);
 
-  // ── Bid ───────────────────────────────────────────────────────
+  // ── Bid ──────────────────────────────────────────────────────────
   const handleBid = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contract) return;
@@ -122,6 +165,12 @@ export const AuctionPanel: React.FC = () => {
       await refreshState();
 
       setProofState('bid');
+      setEscrowPhase('locked');
+      setHasBidThisSession(true);
+
+      // Show feedback prompt after first successful action this session
+      setShowFeedbackPrompt(true);
+
       setTimeout(() => setProofState('none'), 8000);
     } catch (err: any) {
       console.error(err);
@@ -133,7 +182,7 @@ export const AuctionPanel: React.FC = () => {
     }
   };
 
-  // ── Reveal ────────────────────────────────────────────────────
+  // ── Reveal ───────────────────────────────────────────────────────
   const handleReveal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contract) return;
@@ -152,6 +201,7 @@ export const AuctionPanel: React.FC = () => {
       await refreshState();
 
       setProofState('reveal');
+      setShowFeedbackPrompt(true);
       setTimeout(() => setProofState('none'), 8000);
     } catch (err: any) {
       console.error(err);
@@ -170,7 +220,7 @@ export const AuctionPanel: React.FC = () => {
     }
   };
 
-  // ── Advance Phase ─────────────────────────────────────────────
+  // ── Advance Phase ────────────────────────────────────────────────
   const handleAdvance = async () => {
     if (!contract) return;
     setIsAdvancing(true);
@@ -180,6 +230,7 @@ export const AuctionPanel: React.FC = () => {
       await contract.callTx.advance_phase();
       await refreshState();
       setProofState('advance');
+      setShowFeedbackPrompt(true);
       setTimeout(() => setProofState('none'), 5000);
     } catch (err: any) {
       console.error(err);
@@ -191,13 +242,28 @@ export const AuctionPanel: React.FC = () => {
     }
   };
 
-  // ── Empty states ───────────────────────────────────────────────
+  // ── Empty states ──────────────────────────────────────────────────
   if (!isConnected) {
     return (
       <div className="panel empty-state">
         <div className="moon-icon">🌕</div>
         <h2>Connect Wallet to Begin</h2>
-        <p>Connect your Lace browser wallet to interact with the Sealed-Bid Auction on the Midnight Network.</p>
+        <p>
+          Connect your <strong>Lace browser wallet</strong> (set to Preprod) to interact with the
+          Sealed-Bid Auction on the Midnight Network.
+        </p>
+        <div className="empty-state__faucet-hint">
+          <span>🆕 New to Midnight?</span>
+          <a
+            id="faucet-link-empty"
+            href="https://midnight-tmnight-preprod.nethermind.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-outline"
+          >
+            💧 Get free testnet tNIGHT →
+          </a>
+        </div>
         <div className="privacy-explainer-hint">
           <PrivacyExplainer />
         </div>
@@ -208,7 +274,7 @@ export const AuctionPanel: React.FC = () => {
   if (!contract) {
     return (
       <div className="panel empty-state">
-        <div className="spinner large"></div>
+        <div className="spinner large" />
         <h2>Loading Contract...</h2>
         {error ? (
           <p className="error-text">{error}</p>
@@ -225,20 +291,31 @@ export const AuctionPanel: React.FC = () => {
 
   return (
     <div className="panel counter-panel">
-      {/* ── Error / Proof feedback ───────────────────────────── */}
+      {/* ── Feedback Prompt ───────────────────────────────────── */}
+      <FeedbackPrompt
+        show={showFeedbackPrompt}
+        onDismiss={() => setShowFeedbackPrompt(false)}
+      />
+
+      {/* ── Error / Proof feedback ────────────────────────────── */}
       {proofState === 'proving' && (
         <div className="proving-banner">
-          <span className="spinner"></span>
+          <span className="spinner" />
           <span>Generating Zero-Knowledge Proof locally… your private data never leaves your browser.</span>
         </div>
       )}
       {error && proofState !== 'proving' && (
-        <div className="error-banner">
+        <div className="error-banner" role="alert">
           <strong>⚠ </strong>{error}
         </div>
       )}
 
-      {/* ── Auction status bar ───────────────────────────────── */}
+      {/* ── Escrow Status (shown after bid is placed) ─────────── */}
+      {(hasBidThisSession || escrowPhase !== 'none') && (
+        <EscrowStatus phase={escrowPhase} bidAmount={hasBidThisSession ? bidAmount : undefined} />
+      )}
+
+      {/* ── Auction status bar ────────────────────────────────── */}
       <div className="state-display">
         <div className="state-item">
           <label>Auction Phase</label>
@@ -268,7 +345,7 @@ export const AuctionPanel: React.FC = () => {
         )}
       </div>
 
-      {/* ── Advance phase button (demo helper) ──────────────── */}
+      {/* ── Advance phase button (demo helper) ───────────────── */}
       {phase < 2 && (
         <div className="advance-row">
           <button
@@ -282,7 +359,7 @@ export const AuctionPanel: React.FC = () => {
         </div>
       )}
 
-      {/* ── Privacy explainer toggle ─────────────────────────── */}
+      {/* ── Privacy explainer toggle ──────────────────────────── */}
       <PrivacyExplainer />
 
       {/* ── Action cards ─────────────────────────────────────── */}
@@ -292,7 +369,8 @@ export const AuctionPanel: React.FC = () => {
           <div className="card-phase-badge">{phase === 0 ? 'Active' : 'Locked'}</div>
           <h3>1. 🔒 Place Sealed Bid</h3>
           <p className="description">
-            Submit a cryptographic commitment to your bid. Your actual amount and a random salt are hashed together — only the hash is stored on-chain. Your amount never leaves your device.
+            Submit a cryptographic commitment to your bid. Your actual amount and a random salt are
+            hashed together — only the hash is stored on-chain. Your amount never leaves your device.
           </p>
 
           <form onSubmit={handleBid}>
@@ -317,7 +395,7 @@ export const AuctionPanel: React.FC = () => {
               disabled={isBidding || phase !== 0 || !bidAmount}
             >
               {isBidding ? (
-                <><span className="spinner"></span> Generating ZK Commitment…</>
+                <><span className="spinner" /> Generating ZK Commitment…</>
               ) : '🔒 Place Sealed Bid'}
             </button>
           </form>
@@ -336,7 +414,12 @@ export const AuctionPanel: React.FC = () => {
           <div className="card-phase-badge">{phase === 1 ? 'Active' : phase === 0 ? 'Waiting' : 'Done'}</div>
           <h3>2. 🔓 Reveal Bid</h3>
           <p className="description">
-            After the bidding deadline, reveal your bid to compete for the win. A ZK proof is generated locally — <strong>if your bid is not the highest, the proof generation fails and your amount is never sent to the network.</strong>
+            After the bidding deadline, reveal your bid to compete for the win. A ZK proof is
+            generated locally —{' '}
+            <strong>
+              if your bid is not the highest, the proof generation fails and your amount is never
+              sent to the network.
+            </strong>
           </p>
 
           <form onSubmit={handleReveal}>
@@ -348,7 +431,9 @@ export const AuctionPanel: React.FC = () => {
                 disabled={true}
                 readOnly
               />
-              <small className="input-hint">Retrieved from local storage — {bidSalt ? '🔐 Salt saved' : '⚠ No salt found'}</small>
+              <small className="input-hint">
+                Retrieved from local storage — {bidSalt ? '🔐 Salt saved' : '⚠ No salt found'}
+              </small>
             </div>
 
             <button
@@ -358,7 +443,7 @@ export const AuctionPanel: React.FC = () => {
               disabled={isRevealing || phase !== 1 || !bidSalt}
             >
               {isRevealing ? (
-                <><span className="spinner"></span> Generating Reveal Proof…</>
+                <><span className="spinner" /> Generating Reveal Proof…</>
               ) : '🔓 Reveal My Bid'}
             </button>
           </form>
@@ -389,7 +474,8 @@ export const AuctionPanel: React.FC = () => {
             )}
           </div>
           <div className="privacy-guarantee">
-            🔒 All losing bid amounts remain <strong>mathematically secret forever</strong>. They were never broadcast to the network.
+            🔒 All losing bid amounts remain <strong>mathematically secret forever</strong>. They were
+            never broadcast to the network.
           </div>
         </div>
       )}
