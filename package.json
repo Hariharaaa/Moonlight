@@ -1,16 +1,21 @@
 {
   "name": "fullmoon-midnight-counter",
   "version": "1.0.0",
-  "description": "A privacy-preserving counter smart contract built on the Midnight Network using Compact ZK language",
+  "description": "FullMoon: Privacy-Preserving Sealed-Bid Auctions on Midnight & Confidential Proof of Reserves (zkPoR)",
   "main": "index.js",
   "scripts": {
     "compile": "echo 'Skipping compile in CI as managed files are committed'",
     "compile:full": "compact compile contracts/auction.compact managed/",
     "test": "jest",
+    "test:por": "cd zkpor-contracts && npx hardhat test",
+    "test:all": "jest && cd zkpor-contracts && npx hardhat test",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
     "deploy:preview": "NODE_OPTIONS=\"--max-old-space-size=12288\" node scripts/deploy.js --network preview",
     "deploy:preprod": "NODE_OPTIONS=\"--max-old-space-size=12288\" node scripts/deploy.js --network preprod",
     "deploy:local": "npm run compile && cd mn-demo && npm run build && node dist/deploy-auction.js --network localdev",
-    "build": "npm run compile && npm test"
+    "build": "npm run compile && npm test && npm run build:frontend"
   },
   "keywords": [
     "midnight",

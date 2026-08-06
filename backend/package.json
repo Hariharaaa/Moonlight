@@ -1,0 +1,30 @@
+{
+  "name": "zkpor-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "build:tree": "tsx src/merkle.ts",
+    "prove:solvency": "tsx src/prover.ts solvency",
+    "prove:inclusion": "tsx src/prover.ts inclusion",
+    "submit": "tsx src/submitter.ts",
+    "lint": "eslint src/**/*.ts"
+  },
+  "dependencies": {
+    "circomlibjs": "^0.1.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "express": "^4.19.0",
+    "snarkjs": "^0.7.4",
+    "viem": "^2.18.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.17.0",
+    "typescript": "^5.5.0"
+  }
+}

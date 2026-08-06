@@ -1,0 +1,151 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/Users/harihara/Projects/zkpor/contracts/src/MockVerifier.sol": {
+      "lastModificationDate": 1786030216488,
+      "contentHash": "0db4a57af59516a7ebd6e304a7d126c8",
+      "sourceName": "src/MockVerifier.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": [
+        "MockVerifier"
+      ]
+    },
+    "/Users/harihara/Projects/zkpor/contracts/src/ProofOfReserves.sol": {
+      "lastModificationDate": 1786030084690,
+      "contentHash": "d13ae38f9b7f16174267c6ff0dbf6acb",
+      "sourceName": "src/ProofOfReserves.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": [
+        "IGroth16Verifier",
+        "ProofOfReserves"
+      ]
+    },
+    "/Users/harihara/Projects/FullMoon/zkpor-contracts/src/MockVerifier.sol": {
+      "lastModificationDate": 1786034880940,
+      "contentHash": "0db4a57af59516a7ebd6e304a7d126c8",
+      "sourceName": "src/MockVerifier.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": [
+        "MockVerifier"
+      ]
+    },
+    "/Users/harihara/Projects/FullMoon/zkpor-contracts/src/ProofOfReserves.sol": {
+      "lastModificationDate": 1786034880940,
+      "contentHash": "d13ae38f9b7f16174267c6ff0dbf6acb",
+      "sourceName": "src/ProofOfReserves.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": [
+        "IGroth16Verifier",
+        "ProofOfReserves"
+      ]
+    }
+  }
+}

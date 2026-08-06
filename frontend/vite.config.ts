@@ -46,6 +46,13 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    // Proxy PoR backend requests
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
     // Serve managed ZK artifacts during dev
     fs: {
       allow: ['..'],

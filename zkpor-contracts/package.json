@@ -1,0 +1,23 @@
+{
+  "name": "zkpor-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "deploy:sepolia": "npx hardhat run scripts/deploy.ts --network sepolia",
+    "lint": "npx solhint 'src/**/*.sol'"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@types/node": "^22.0.0",
+    "hardhat": "^2.22.0",
+    "solhint": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1"
+  }
+}

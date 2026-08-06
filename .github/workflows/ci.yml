@@ -1,4 +1,4 @@
-name: Midnight CI
+name: FullMoon CI/CD
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-test:
+  test-and-build:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,10 +23,16 @@ jobs:
     - name: Install root dependencies
       run: npm install
 
-    - name: Run Compact contract tests
+    - name: Run Midnight Compact tests
       run: npm test
 
-    - name: Install and build frontend
+    - name: Run zkPoR Solidity & Circuit tests
+      run: |
+        cd zkpor-contracts
+        npm install
+        npx hardhat test
+
+    - name: Build Unified Frontend
       run: |
         cd frontend
         npm install
