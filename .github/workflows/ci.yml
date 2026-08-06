@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -19,10 +20,14 @@ jobs:
         node-version: '22.x'
         cache: 'npm'
 
-    - name: Install dependencies
+    - name: Install root dependencies
       run: npm install
 
-    - name: Compile Compact Contract
-      run: npm run compile
+    - name: Run Compact contract tests
+      run: npm test
 
-
+    - name: Install and build frontend
+      run: |
+        cd frontend
+        npm install
+        npm run build

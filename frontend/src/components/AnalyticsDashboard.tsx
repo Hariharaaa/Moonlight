@@ -12,8 +12,6 @@ interface AuctionStats {
   lastRefreshed: Date | null;
 }
 
-type EscrowPhase = 'none' | 'locked' | 'pending_reveal' | 'settled';
-
 // ── Helpers ───────────────────────────────────────────────────────
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || 'd3a9182b9b58b653c8dbae9fc31422b0c217e3c8a7693293aa090e8e909d23fd';
 const EXPLORER_BASE = 'https://midnight-explorer.preprod.midnight.network';
@@ -40,18 +38,6 @@ function getUniqueWalletCount(): number {
   } catch { return 0; }
 }
 
-function accumulateTotalBids(sessionBids: number): number {
-  try {
-    const prev = parseInt(localStorage.getItem('fm_total_bids') || '0', 10);
-    // We don't overwrite — session bids are added once per page load
-    return prev + sessionBids;
-  } catch { return sessionBids; }
-}
-
-function getStoredTotalBids(): number {
-  try { return parseInt(localStorage.getItem('fm_total_bids') || '0', 10); } catch { return 0; }
-}
-
 // ── Component ─────────────────────────────────────────────────────
 export const AnalyticsDashboard: React.FC = () => {
   const { isConnected, address } = useWalletContext();
@@ -65,7 +51,6 @@ export const AnalyticsDashboard: React.FC = () => {
     lastRefreshed: null,
   });
   const [uniqueWallets, setUniqueWallets] = useState(getUniqueWalletCount());
-  const [storedTotalBids, setStoredTotalBids] = useState(getStoredTotalBids());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const walletTracked = useRef(false);
@@ -84,19 +69,12 @@ export const AnalyticsDashboard: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const { getContractInstance } = await import('../services/contract');
-      // We only need queryState — we'll grab the walletApi from context if connected
-      // If not connected, show cached/localStorage stats only
       if (!isConnected) {
         setStats(prev => ({ ...prev, lastRefreshed: new Date() }));
         setLoading(false);
         return;
       }
 
-      // Dynamic import to avoid circular dep — reuse the existing singleton
-      // Note: if AuctionPanel already has a contract instance, this re-creates.
-      // This is acceptable for a read-only analytics view.
-      const { Buffer } = await import('buffer');
       const raw = localStorage.getItem('fm_contract_state_cache');
       if (raw) {
         try {
@@ -141,9 +119,6 @@ export const AnalyticsDashboard: React.FC = () => {
             lastRefreshed: new Date(cached.ts),
           }));
         } catch { /* ignore */ }
-      }
-      if (e.key === 'fm_total_bids') {
-        setStoredTotalBids(parseInt(e.newValue || '0', 10));
       }
       if (e.key === 'fm_unique_wallets') {
         try { setUniqueWallets(JSON.parse(e.newValue || '[]').length); } catch { /* ignore */ }

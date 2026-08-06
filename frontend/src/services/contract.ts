@@ -27,7 +27,7 @@ import * as AuctionContract from 'managed/contract';
 // (e.g. "auction#bid"), but assertSafeName() rejects '#'.
 // We strip the contract-name prefix before fetching.
 //
-class AuctionZkConfigProvider extends FetchZkConfigProvider {
+class AuctionZkConfigProvider extends FetchZkConfigProvider<string> {
   private stripPrefix(circuitId: string): string {
     return circuitId.includes('#') ? circuitId.split('#').pop()! : circuitId;
   }
@@ -46,9 +46,10 @@ class AuctionZkConfigProvider extends FetchZkConfigProvider {
 }
 
 export async function createProviders(walletApi: ConnectedAPI) {
-  const serviceUris = await walletApi.getConfiguration();
+  await walletApi.getConfiguration();
   const shielded = await walletApi.getShieldedAddresses();
   const unshielded = await walletApi.getUnshieldedAddress();
+
 
   const coinPublicKey = shielded.shieldedCoinPublicKey;
   const encryptionPublicKey = shielded.shieldedEncryptionPublicKey;
