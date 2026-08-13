@@ -13,7 +13,7 @@ interface AuctionStats {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
-const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || 'd3a9182b9b58b653c8dbae9fc31422b0c217e3c8a7693293aa090e8e909d23fd';
+const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || '68cfee8397ddbe8d376801af3bfd8c3787da1be37dd8747ea0d390bfde32eed7';
 const EXPLORER_BASE = 'https://midnight-explorer.preprod.midnight.network';
 
 const PHASE_LABEL: Record<number, string> = { 0: 'Bidding 🔒', 1: 'Reveal 🔓', 2: 'Settled 🏆' };

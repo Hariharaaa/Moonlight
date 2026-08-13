@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { WalletButton } from './components/WalletButton';
-import { AuctionPanel } from './components/AuctionPanel';
+import { Marketplace } from './components/Marketplace';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { ProofOfReservesPanel } from './components/ProofOfReservesPanel';
 import { OnboardingOverlay } from './components/OnboardingOverlay';
@@ -85,7 +85,7 @@ function App() {
 
       {/* ── Main Content ───────────────────────────────────────── */}
       <main className="app-main" role="tabpanel">
-        {activeTab === 'auction' && <AuctionPanel />}
+        {activeTab === 'auction' && <Marketplace />}
         {activeTab === 'por' && <ProofOfReservesPanel />}
         {activeTab === 'analytics' && <AnalyticsDashboard />}
       </main>

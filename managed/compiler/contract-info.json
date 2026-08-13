@@ -4,15 +4,81 @@
   "runtime-version": "0.16.0",
   "circuits": [
     {
+      "name": "create_auction",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "auction_id",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "seller",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "cancel_auction",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "auction_id",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "seller",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
       "name": "bid",
       "pure": false,
       "proof": true,
       "arguments": [
         {
+          "name": "auction_id",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
           "name": "bidder",
           "type": {
             "type-name": "Bytes",
             "length": 32
+          }
+        },
+        {
+          "name": "lock_amount",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
           }
         },
         {
@@ -41,6 +107,13 @@
       "pure": false,
       "proof": true,
       "arguments": [
+        {
+          "name": "auction_id",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
       ],
       "result-type": {
         "type-name": "Tuple",
@@ -53,6 +126,13 @@
       "pure": false,
       "proof": true,
       "arguments": [
+        {
+          "name": "auction_id",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
         {
           "name": "bidder",
           "type": {
@@ -80,6 +160,51 @@
         "types": [
         ]
       }
+    },
+    {
+      "name": "settle",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "auction_id",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "refund",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "auction_id",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "user",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
     }
   ],
   "witnesses": [
@@ -88,8 +213,59 @@
   ],
   "ledger": [
     {
-      "name": "bids",
+      "name": "auctions",
       "index": 0,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Bytes",
+        "length": 32
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "Auction",
+        "elements": [
+          {
+            "name": "seller",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "phase",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 255
+            }
+          },
+          {
+            "name": "highest_bid",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "highest_bidder",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "bid_count",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "bids",
+      "index": 1,
       "exported": true,
       "storage": "Map",
       "key": {
@@ -102,33 +278,17 @@
       }
     },
     {
-      "name": "highest_bid",
-      "index": 1,
-      "exported": true,
-      "storage": "Cell",
-      "type": {
-        "type-name": "Uint",
-        "maxval": 18446744073709551615
-      }
-    },
-    {
-      "name": "highest_bidder",
+      "name": "escrows",
       "index": 2,
       "exported": true,
-      "storage": "Cell",
-      "type": {
+      "storage": "Map",
+      "key": {
         "type-name": "Bytes",
         "length": 32
-      }
-    },
-    {
-      "name": "phase",
-      "index": 3,
-      "exported": true,
-      "storage": "Cell",
-      "type": {
+      },
+      "value": {
         "type-name": "Uint",
-        "maxval": 255
+        "maxval": 18446744073709551615
       }
     }
   ]

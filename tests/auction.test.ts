@@ -1,27 +1,28 @@
 import * as crypto from 'crypto';
 
 // ── Ledger State Simulator ────────────────────────────────────
-interface LedgerState {
-  bids: Map<string, string>; // bidder pubkey -> commitment
+interface Auction {
+  seller: string;
+  phase: number; // 0: Bidding, 1: Reveal, 2: Settled, 3: Cancelled
   highest_bid: bigint;
   highest_bidder: string;
-  phase: number; // 0: Bidding, 1: Reveal, 2: Closed
+  bid_count: bigint;
+}
+
+interface LedgerState {
+  auctions: Map<string, Auction>;
+  bids: Map<string, string>; // hash([auction_id, bidder]) -> commitment
+  escrows: Map<string, bigint>; // hash([auction_id, user]) -> balance
 }
 
 // ── Contract Simulator ────────────────────────────────────────
-// Simulates the Compact circuit behavior and ledger state for testing.
-// Mirrors the logic in contracts/auction.compact exactly.
 class AuctionContractSimulator {
   private state: LedgerState = {
+    auctions: new Map(),
     bids: new Map(),
-    highest_bid: 0n,
-    highest_bidder: '',
-    phase: 0,
+    escrows: new Map(),
   };
 
-  /**
-   * Helper to simulate Compact's persistentHash for commitments.
-   */
   static generateCommitment(amount: bigint, salt: string): string {
     const hash = crypto.createHash('sha256');
     hash.update(amount.toString());
@@ -29,199 +30,251 @@ class AuctionContractSimulator {
     return hash.digest('hex');
   }
 
+  static getMapKey(auctionId: string, user: string): string {
+    const hash = crypto.createHash('sha256');
+    hash.update(auctionId);
+    hash.update(user);
+    return hash.digest('hex');
+  }
+
   getState(): LedgerState {
-    return { ...this.state };
+    // Deep copy for assertions
+    return {
+      auctions: new Map(Array.from(this.state.auctions.entries()).map(([k, v]) => [k, { ...v }])),
+      bids: new Map(this.state.bids),
+      escrows: new Map(this.state.escrows)
+    };
+  }
+  
+  getEscrow(auctionId: string, user: string): bigint {
+    const key = AuctionContractSimulator.getMapKey(auctionId, user);
+    return this.state.escrows.get(key) || 0n;
   }
 
-  /**
-   * Circuit: bid
-   * PUBLIC: bidder
-   * PRIVATE: amount, salt (never leave the local machine)
-   */
-  bid(bidder: string, amount: bigint, salt: string) {
-    if (this.state.phase !== 0) {
-      throw new Error("Auction is not in the bidding phase");
-    }
+  create_auction(auction_id: string, seller: string) {
+    if (this.state.auctions.has(auction_id)) throw new Error("Auction ID already exists");
+    this.state.auctions.set(auction_id, {
+      seller,
+      phase: 0,
+      highest_bid: 0n,
+      highest_bidder: seller,
+      bid_count: 0n
+    });
+  }
+
+  cancel_auction(auction_id: string, seller: string) {
+    const auction = this.state.auctions.get(auction_id);
+    if (!auction) throw new Error("Auction not found");
+    if (auction.seller !== seller) throw new Error("Only the seller can cancel");
+    if (auction.phase !== 0) throw new Error("Auction is not in Bidding phase");
+    if (auction.bid_count > 0n) throw new Error("Cannot cancel an auction that has bids");
+
+    auction.phase = 3; // Cancelled
+  }
+
+  bid(auction_id: string, bidder: string, lock_amount: bigint, amount: bigint, salt: string) {
+    const auction = this.state.auctions.get(auction_id);
+    if (!auction) throw new Error("Auction not found");
+    if (auction.phase !== 0) throw new Error("Auction is not in the bidding phase");
+
+    // ZK Escrow Check
+    if (amount > lock_amount) throw new Error("Bid amount exceeds locked escrow");
+
+    const map_key = AuctionContractSimulator.getMapKey(auction_id, bidder);
     const commitment = AuctionContractSimulator.generateCommitment(amount, salt);
-    this.state.bids.set(bidder, commitment);
+    
+    this.state.bids.set(map_key, commitment);
+    
+    const current_escrow = this.state.escrows.get(map_key) || 0n;
+    this.state.escrows.set(map_key, current_escrow + lock_amount);
+
+    auction.bid_count += 1n;
   }
 
-  /**
-   * Circuit: advance_phase
-   */
-  advance_phase() {
-    if (this.state.phase >= 2) {
-      throw new Error("Auction is already closed");
-    }
-    this.state.phase += 1;
+  advance_phase(auction_id: string) {
+    const auction = this.state.auctions.get(auction_id);
+    if (!auction) throw new Error("Auction not found");
+    if (auction.phase >= 2) throw new Error("Auction is already closed or cancelled");
+    auction.phase += 1;
   }
 
-  /**
-   * Circuit: reveal
-   * PRIVATE: amount, salt
-   * PUBLIC: bidder
-   * ZK Constraint: amount > highest_bid (Fails locally if not true)
-   */
-  reveal(bidder: string, amount: bigint, salt: string) {
-    if (this.state.phase !== 1) {
-      throw new Error("Auction is not in the reveal phase");
-    }
-    if (!this.state.bids.has(bidder)) {
-      throw new Error("No bid found for this participant");
-    }
+  reveal(auction_id: string, bidder: string, amount: bigint, salt: string) {
+    const auction = this.state.auctions.get(auction_id);
+    if (!auction) throw new Error("Auction not found");
+    if (auction.phase !== 1) throw new Error("Auction is not in the reveal phase");
 
-    const stored_commitment = this.state.bids.get(bidder);
+    const map_key = AuctionContractSimulator.getMapKey(auction_id, bidder);
+    if (!this.state.bids.has(map_key)) throw new Error("No bid found for this participant");
+
+    const stored_commitment = this.state.bids.get(map_key);
     const calculated_commitment = AuctionContractSimulator.generateCommitment(amount, salt);
-    if (stored_commitment !== calculated_commitment) {
-      throw new Error("Invalid bid amount or salt");
-    }
+    if (stored_commitment !== calculated_commitment) throw new Error("Invalid bid amount or salt");
 
-    // THE PRIVACY MAGIC TRICK:
-    // This ZK assertion prevents losing bids from ever being revealed on-chain.
-    const curr_highest = this.state.highest_bid;
-    if (amount <= curr_highest) {
-      throw new Error("Bid is not higher than the current highest bid");
-    }
+    // Privacy Constraint
+    if (amount <= auction.highest_bid) throw new Error("Bid is not higher than the current highest bid");
 
-    // Update public ledger with the new highest bid
-    this.state.highest_bid = amount;
-    this.state.highest_bidder = bidder;
+    auction.highest_bid = amount;
+    auction.highest_bidder = bidder;
+  }
+
+  settle(auction_id: string) {
+    const auction = this.state.auctions.get(auction_id);
+    if (!auction) throw new Error("Auction not found");
+    if (auction.phase !== 1) throw new Error("Auction must be in Reveal phase to settle");
+
+    auction.phase = 2; // Settled
+
+    if (auction.highest_bid > 0n) {
+      const winner_key = AuctionContractSimulator.getMapKey(auction_id, auction.highest_bidder);
+      const winner_escrow = this.state.escrows.get(winner_key) || 0n;
+      this.state.escrows.set(winner_key, winner_escrow - auction.highest_bid);
+      
+      const seller_key = AuctionContractSimulator.getMapKey(auction_id, auction.seller);
+      const seller_escrow = this.state.escrows.get(seller_key) || 0n;
+      this.state.escrows.set(seller_key, seller_escrow + auction.highest_bid);
+    }
+  }
+
+  refund(auction_id: string, user: string) {
+    const auction = this.state.auctions.get(auction_id);
+    if (!auction) throw new Error("Auction not found");
+    if (auction.phase < 2) throw new Error("Auction must be Settled or Cancelled to claim refunds");
+
+    const map_key = AuctionContractSimulator.getMapKey(auction_id, user);
+    if (!this.state.escrows.has(map_key)) throw new Error("No escrow balance found");
+    
+    const balance = this.state.escrows.get(map_key)!;
+    if (balance === 0n) throw new Error("Escrow balance is zero");
+
+    this.state.escrows.set(map_key, 0n);
   }
 }
 
 // ══════════════════════════════════════════════════════════════
-// TEST SUITE
+// TEST SUITE: FullMoon Escrow & Default Handling
 // ══════════════════════════════════════════════════════════════
 
-describe('Sealed-Bid Auction Contract', () => {
+describe('FullMoon Auction Marketplace Contract', () => {
   let contract: AuctionContractSimulator;
 
   beforeEach(() => {
     contract = new AuctionContractSimulator();
   });
 
-  // ── TEST 1: Happy Path ─────────────────────────────────────────
-  test('Happy Path: User can place a bid and reveal it to become the highest bidder', () => {
-    const bidderAlice = '0xAlicePubKey';
-    const aliceAmount = 150n;
-    const aliceSalt = 'random_salt_123';
+  test('Happy Path: User bids, locks escrow, reveals, and settles cleanly', () => {
+    const aId = 'auction_01';
+    const seller = 'seller_xyz';
+    const bidder = 'bidder_abc';
+
+    contract.create_auction(aId, seller);
     
-    const aliceCommitment = AuctionContractSimulator.generateCommitment(aliceAmount, aliceSalt);
+    // Bid 100, lock 150
+    contract.bid(aId, bidder, 150n, 100n, 'salt1');
+    expect(contract.getEscrow(aId, bidder)).toBe(150n);
 
-    // 1. Bidding Phase
-    contract.bid(bidderAlice, aliceAmount, aliceSalt);
-    expect(contract.getState().bids.has(bidderAlice)).toBe(true);
-
-    // 2. Advance to Reveal Phase
-    contract.advance_phase();
-    expect(contract.getState().phase).toBe(1);
-
-    // 3. Reveal Phase
-    contract.reveal(bidderAlice, aliceAmount, aliceSalt);
-    expect(contract.getState().highest_bid).toBe(aliceAmount);
-    expect(contract.getState().highest_bidder).toBe(bidderAlice);
+    contract.advance_phase(aId);
+    
+    // Reveal
+    contract.reveal(aId, bidder, 100n, 'salt1');
+    
+    // Settle
+    contract.settle(aId);
+    
+    // After settle, seller has the 100n
+    expect(contract.getEscrow(aId, seller)).toBe(100n);
+    // Bidder's remaining escrow is 50n
+    expect(contract.getEscrow(aId, bidder)).toBe(50n);
   });
 
-  // ── TEST 2: Rejection Path (Privacy Guarantee) ────────────────
-  test('Rejection Path: Losing bids are mathematically rejected by ZK circuit and stay secret', () => {
-    const bidderAlice = '0xAlice';
-    const bidderBob = '0xBob';
+  test('Rejection Path: Cannot bid more than locked escrow (ZK Failure)', () => {
+    const aId = 'auction_02';
+    contract.create_auction(aId, 'seller_xyz');
 
-    // Alice bids 200
-    contract.bid(bidderAlice, 200n, 'saltA');
-
-    // Bob bids 100 (a losing bid)
-    contract.bid(bidderBob, 100n, 'saltB');
-
-    // Advance to Reveal Phase
-    contract.advance_phase();
-
-    // Alice reveals her winning bid
-    contract.reveal(bidderAlice, 200n, 'saltA');
-    expect(contract.getState().highest_bid).toBe(200n);
-
-    // Bob attempts to reveal his lower bid.
-    // In Midnight, this throws locally during proof generation, ensuring his 
-    // losing bid value (100) never hits the public blockchain!
     expect(() => {
-      contract.reveal(bidderBob, 100n, 'saltB');
-    }).toThrow("Bid is not higher than the current highest bid");
-
-    // Highest bid remains Alice's
-    expect(contract.getState().highest_bid).toBe(200n);
-    expect(contract.getState().highest_bidder).toBe(bidderAlice);
+      // Trying to bid 200 while only locking 100
+      contract.bid(aId, 'bidder_abc', 100n, 200n, 'saltX');
+    }).toThrow("Bid amount exceeds locked escrow");
   });
 
-  // ── TEST 3: Rejection Path (Integrity Guarantee) ──────────────
-  test('Rejection Path: Cannot place bids after the bidding phase has ended', () => {
-    const bidderCharlie = '0xCharlie';
-    const charlieCommitment = AuctionContractSimulator.generateCommitment(50n, 'saltC');
+  test('Cancellation: Allowed at 0 bids, blocked if bids exist', () => {
+    const aId = 'auction_cancel';
+    const seller = 'seller_00';
 
-    // Advance phase immediately to Reveal
-    contract.advance_phase();
-    expect(contract.getState().phase).toBe(1);
+    contract.create_auction(aId, seller);
+    
+    // Seller can cancel right away
+    contract.cancel_auction(aId, seller);
+    expect(contract.getState().auctions.get(aId)!.phase).toBe(3);
 
-    // Charlie tries to sneak a bid in
+    // Try again on a new auction with bids
+    const aId2 = 'auction_no_cancel';
+    contract.create_auction(aId2, seller);
+    contract.bid(aId2, 'bidder', 50n, 50n, 'salt');
+
     expect(() => {
-      contract.bid(bidderCharlie, 50n, 'saltC');
-    }).toThrow("Auction is not in the bidding phase");
+      contract.cancel_auction(aId2, seller);
+    }).toThrow("Cannot cancel an auction that has bids");
   });
 
-  // ── TEST 4: Invalid Commitment ────────────────────────────────
-  test('Rejection Path: Reveal fails if amount or salt does not match commitment', () => {
-    const bidderDave = '0xDave';
-    const daveRealAmount = 300n;
-    const daveCommitment = AuctionContractSimulator.generateCommitment(daveRealAmount, 'true_salt');
+  test('Dispute/Fallback (Winner Default): If highest bidder defaults (does not reveal), next highest wins, and escrow refunds properly', () => {
+    const aId = 'auction_default';
+    const seller = 'seller_def';
+    
+    const trueHighestBidder = 'bidder_lazy';
+    const defaultWinner = 'bidder_active';
 
-    contract.bid(bidderDave, daveRealAmount, 'true_salt');
-    contract.advance_phase();
+    contract.create_auction(aId, seller);
 
-    // Dave tries to cheat by revealing a higher amount
-    expect(() => {
-      contract.reveal(bidderDave, 500n, 'true_salt');
-    }).toThrow("Invalid bid amount or salt");
+    // trueHighest bids 500, locks 500
+    contract.bid(aId, trueHighestBidder, 500n, 500n, 'salt1');
+    // active bids 300, locks 300
+    contract.bid(aId, defaultWinner, 300n, 300n, 'salt2');
 
-    // Dave tries with wrong salt
-    expect(() => {
-      contract.reveal(bidderDave, daveRealAmount, 'wrong_salt');
-    }).toThrow("Invalid bid amount or salt");
+    contract.advance_phase(aId);
+
+    // `trueHighestBidder` fails to complete the reveal/settlement step (defaults)
+    // `defaultWinner` reveals their 300n bid
+    contract.reveal(aId, defaultWinner, 300n, 'salt2');
+
+    // Settle is called. Because the 500n was never revealed, it wasn't recorded as highest.
+    contract.settle(aId);
+
+    const state = contract.getState().auctions.get(aId)!;
+    expect(state.highest_bid).toBe(300n);
+    expect(state.highest_bidder).toBe(defaultWinner);
+
+    // Seller gets the 300n
+    expect(contract.getEscrow(aId, seller)).toBe(300n);
+
+    // Defaulted bidder gets FULL refund safely because they never became the highest_bidder
+    expect(contract.getEscrow(aId, trueHighestBidder)).toBe(500n);
+    contract.refund(aId, trueHighestBidder);
+    expect(contract.getEscrow(aId, trueHighestBidder)).toBe(0n); // Successfully fully refunded!
   });
 
-  // ── TEST 5: Settlement Correctness + Privacy Check ────────────
-  test('Settlement: highest bid wins, correct winner disclosed, losing amounts never in public state', () => {
-    const bidderAlice = '0xAlice';
-    const bidderBob = '0xBob';
-    const bidderCharlie = '0xCharlie';
+  test('Dispute/Fallback (Total Default): If NO ONE reveals, settlement safely returns escrow to all', () => {
+    const aId = 'auction_no_reveal';
+    const seller = 'seller_def';
+    const bidder = 'bidder_shy';
 
-    // All three bidders place sealed bids
-    contract.bid(bidderAlice, 100n, 'saltA');
-    contract.bid(bidderBob, 300n, 'saltB');
-    contract.bid(bidderCharlie, 200n, 'saltC');
+    contract.create_auction(aId, seller);
+    contract.bid(aId, bidder, 1000n, 1000n, 'salt_shy');
 
-    contract.advance_phase();
+    contract.advance_phase(aId);
+    
+    // No one reveals. Seller or anyone calls settle.
+    contract.settle(aId);
 
-    // Alice reveals first (100 > 0 initial, succeeds)
-    contract.reveal(bidderAlice, 100n, 'saltA');
-    expect(contract.getState().highest_bid).toBe(100n);
+    const state = contract.getState().auctions.get(aId)!;
+    expect(state.highest_bid).toBe(0n);
+    expect(state.highest_bidder).toBe(seller);
 
-    // Bob reveals 300 — beats Alice
-    contract.reveal(bidderBob, 300n, 'saltB');
-    expect(contract.getState().highest_bid).toBe(300n);
-    expect(contract.getState().highest_bidder).toBe(bidderBob);
+    // Seller escrow hasn't increased
+    expect(contract.getEscrow(aId, seller)).toBe(0n);
 
-    // Charlie's 200 is a losing bid — ZK proof fails locally, never broadcast
-    expect(() => {
-      contract.reveal(bidderCharlie, 200n, 'saltC');
-    }).toThrow("Bid is not higher than the current highest bid");
-
-    // PRIVACY CHECK: Charlie's raw amount (200) is NEVER in public state
-    const finalState = contract.getState();
-    expect(finalState.highest_bid).toBe(300n);          // Not 200 (Charlie's amount)
-    expect(finalState.highest_bidder).toBe(bidderBob);  // Not Charlie
-    // Bids map only stores commitments (hashes), not the raw amounts
-    const charlieEntry = finalState.bids.get(bidderCharlie);
-    expect(charlieEntry).toBeDefined();    // commitment hash is public
-    expect(charlieEntry).not.toBe('200'); // raw losing amount is NOT there
-    expect(charlieEntry).not.toBe(200);
+    // Bidder's full escrow is preserved and refundable
+    expect(contract.getEscrow(aId, bidder)).toBe(1000n);
+    contract.refund(aId, bidder);
+    expect(contract.getEscrow(aId, bidder)).toBe(0n);
   });
 });

@@ -1,94 +1,194 @@
 // ============================================================
 // auction.compact — Midnight Network Sealed-Bid Auction
-// FullMoon Project — Midnight Builder Challenge Level 3
+// FullMoon Project — Midnight Builder Challenge Level 4
 // ============================================================
 //
 // PRIVACY MODEL:
 //
-//   PUBLIC (on-chain, visible to anyone):
-//     - `bids`          : Map of bidder public keys to their bid commitments (hashes).
-//                         Shows WHO bid, but NOT how much.
-//     - `highest_bid`   : The current highest bid amount (only updated during reveal).
-//     - `highest_bidder`: The public key of the current highest bidder.
-//     - `phase`         : The auction phase (0 = Bidding, 1 = Reveal, 2 = Closed).
+//   PUBLIC (visible on-chain):
+//     - `auctions`      : Map of live auctions (seller, phase, highest_bid).
+//     - `bids`          : Map of (auction_id, bidder) to commitment hashes.
+//     - `escrows`       : Map of (auction_id, user) to LOCKED escrow balances.
 //
-//   PRIVATE (circuit witness — never stored or disclosed on-chain):
+//   PRIVATE (circuit witness):
 //     - `amount`        : The actual bid amount (Uint<64>).
-//     - `salt`          : 32 bytes of randomness to prevent brute-forcing the commitment hash.
+//     - `salt`          : 32 bytes of randomness.
 //
-//   WHAT THE USER PROVES (via ZK proof, without revealing inputs):
-//     - During `bid`:    That they generated a valid commitment.
-//     - During `reveal`: That they know the `amount` and `salt` that hashes to their stored commitment.
-//                        Crucially, they prove that their `amount > highest_bid`.
-//                        If it is not, the proof fails locally, and they cannot submit a reveal transaction.
-//                        This mathematically guarantees that LOSING BIDS ARE NEVER REVEALED on-chain.
+//   FEATURES (Level 4):
+//     - ESCROW: When bidding, a user publicly locks `lock_amount`. The ZK circuit
+//       proves their private `amount <= lock_amount` without revealing the exact bid.
+//     - MULTI-AUCTION: Supports concurrent auctions via `auction_id`.
+//     - CANCELLATION: Sellers can cancel if `bid_count == 0`.
+//     - DISPUTE/DEFAULT: If a winner fails to reveal, they default and the next
+//       highest revealer wins. Since escrow is pre-locked, settlement is guaranteed 
+//       and requires no further action from the winner.
 // ============================================================
 
 pragma language_version >= 0.14.0;
 import CompactStandardLibrary;
 
-// ── Ledger State (PUBLIC — visible on-chain to anyone) ─────────
-export ledger bids: Map<Bytes<32>, Bytes<32>>;
-export ledger highest_bid: Uint<64>;
-export ledger highest_bidder: Bytes<32>;
-export ledger phase: Uint<8>; // 0: Bidding, 1: Reveal, 2: Closed
+export struct Auction {
+  seller: Bytes<32>,
+  phase: Uint<8>, // 0: Bidding, 1: Reveal, 2: Settled, 3: Cancelled
+  highest_bid: Uint<64>,
+  highest_bidder: Bytes<32>,
+  bid_count: Uint<64>
+}
 
-// ── Circuit: bid ───────────────────────────────────────────────
-// Places a sealed bid. The user submits their amount and salt as
-// private witnesses. The circuit computes the commitment and
-// publicly stores only the commitment hash.
-export circuit bid(bidder: Bytes<32>, amount: Uint<64>, salt: Bytes<32>): [] {
-  // Must be in Bidding phase (0)
-  const current_phase = disclose(phase);
-  assert(current_phase == 0, "Auction is not in the bidding phase");
+// ── Ledger State ───────────────────────────────────────────────
+export ledger auctions: Map<Bytes<32>, Auction>;
 
-  // Compute commitment
+// We use hashes of [auction_id, user_key] to index these maps
+export ledger bids: Map<Bytes<32>, Bytes<32>>; 
+export ledger escrows: Map<Bytes<32>, Uint<64>>;
+
+// ── Circuit: create_auction ─────────────────────────────────────
+export circuit create_auction(auction_id: Bytes<32>, seller: Bytes<32>): [] {
+  assert(!auctions.member(disclose(auction_id)), "Auction ID already exists");
+  auctions.insert(disclose(auction_id), Auction {
+    seller: disclose(seller),
+    phase: 0,
+    highest_bid: 0,
+    highest_bidder: disclose(seller), // Default to seller until a bid is revealed
+    bid_count: 0
+  });
+}
+
+// ── Circuit: cancel_auction ─────────────────────────────────────
+// Seller cancellation restricted to no-bid auctions
+export circuit cancel_auction(auction_id: Bytes<32>, seller: Bytes<32>): [] {
+  assert(auctions.member(disclose(auction_id)), "Auction not found");
+  const auction = auctions.lookup(disclose(auction_id));
+  
+  assert(auction.seller == disclose(seller), "Only the seller can cancel");
+  assert(auction.phase == 0, "Auction is not in Bidding phase");
+  assert(auction.bid_count == 0, "Cannot cancel an auction that has bids");
+  
+  auctions.insert(disclose(auction_id), Auction {
+    seller: auction.seller,
+    phase: 3,
+    highest_bid: auction.highest_bid,
+    highest_bidder: auction.highest_bidder,
+    bid_count: auction.bid_count
+  });
+}
+
+// ── Circuit: bid (Escrow-Backed) ────────────────────────────────
+export circuit bid(auction_id: Bytes<32>, bidder: Bytes<32>, lock_amount: Uint<64>, amount: Uint<64>, salt: Bytes<32>): [] {
+  assert(auctions.member(disclose(auction_id)), "Auction not found");
+  const auction = auctions.lookup(disclose(auction_id));
+  assert(auction.phase == 0, "Auction is not in the bidding phase");
+  
+  // ESCROW LOGIC: Prove sufficient funds are locked without revealing the bid amount.
+  assert(amount <= disclose(lock_amount), "Bid amount exceeds locked escrow");
+
+  const map_key = persistentHash<Vector<2, Bytes<32>>>([disclose(auction_id), disclose(bidder)]);
   const commitment = persistentHash<Vector<2, Bytes<32>>>([amount as Bytes<32>, salt]);
+  
+  // Record bid commitment
+  bids.insert(map_key, disclose(commitment));
+  
+  // Lock pseudo-balance escrow
+  const current_escrow = escrows.member(map_key) ? escrows.lookup(map_key) : 0;
+  escrows.insert(map_key, (current_escrow + disclose(lock_amount)) as Uint<64>);
 
-  // Record the bid commitment
-  bids.insert(disclose(bidder), disclose(commitment));
+  // Update auction
+  auctions.insert(disclose(auction_id), Auction {
+    seller: auction.seller,
+    phase: auction.phase,
+    highest_bid: auction.highest_bid,
+    highest_bidder: auction.highest_bidder,
+    bid_count: (auction.bid_count + 1) as Uint<64>
+  });
 }
 
-// ── Circuit: advance_phase ─────────────────────────────────────
-// Moves the auction to the next phase (Bidding -> Reveal -> Closed).
-// In a real dApp, this would be restricted to an admin or a timer,
-// but for this demo, it's public to facilitate testing.
-export circuit advance_phase(): [] {
-  const current_phase = disclose(phase);
-  assert(current_phase < 2, "Auction is already closed");
-  phase = (current_phase + 1) as Uint<8>;
+// ── Circuit: advance_phase ──────────────────────────────────────
+export circuit advance_phase(auction_id: Bytes<32>): [] {
+  assert(auctions.member(disclose(auction_id)), "Auction not found");
+  const auction = auctions.lookup(disclose(auction_id));
+  assert(auction.phase < 2, "Auction is already closed or cancelled");
+  
+  auctions.insert(disclose(auction_id), Auction {
+    seller: auction.seller,
+    phase: (auction.phase + 1) as Uint<8>,
+    highest_bid: auction.highest_bid,
+    highest_bidder: auction.highest_bidder,
+    bid_count: auction.bid_count
+  });
 }
 
-// ── Circuit: reveal ────────────────────────────────────────────
-// The core privacy-preserving circuit.
-// Users attempt to reveal their bid. The circuit verifies the commitment
-// and physically asserts that their bid is higher than the current highest bid.
-// If it's lower, the ZK proof generation fails locally, preventing submission.
-// Therefore, only winning bids can be revealed. Losing bids stay secret!
-export circuit reveal(bidder: Bytes<32>, amount: Uint<64>, salt: Bytes<32>): [] {
-  // Must be in Reveal phase (1)
-  const current_phase = disclose(phase);
-  assert(current_phase == 1, "Auction is not in the reveal phase");
+// ── Circuit: reveal ─────────────────────────────────────────────
+export circuit reveal(auction_id: Bytes<32>, bidder: Bytes<32>, amount: Uint<64>, salt: Bytes<32>): [] {
+  assert(auctions.member(disclose(auction_id)), "Auction not found");
+  const auction = auctions.lookup(disclose(auction_id));
+  assert(auction.phase == 1, "Auction is not in the reveal phase");
 
-  // Bidder must have placed a bid
-  assert(bids.member(disclose(bidder)), "No bid found for this participant");
+  const map_key = persistentHash<Vector<2, Bytes<32>>>([disclose(auction_id), disclose(bidder)]);
+  assert(bids.member(map_key), "No bid found for this participant");
 
-  // Verify the commitment matches the private amount and salt
-  const stored_commitment = bids.lookup(disclose(bidder));
+  // Verify commitment
+  const stored_commitment = bids.lookup(map_key);
   const calculated_commitment = persistentHash<Vector<2, Bytes<32>>>([amount as Bytes<32>, salt]);
   assert(stored_commitment == calculated_commitment, "Invalid bid amount or salt");
 
-  // ── THE PRIVACY MAGIC TRICK ─────────────────────────────
-  // Fetch the current highest bid from the public ledger
-  const curr_highest = disclose(highest_bid);
-  
-  // Assert that this new bid is strictly greater than the current highest.
-  // If it's not, the prover CANNOT generate a valid ZK proof, and the
-  // transaction is rejected before it even reaches the network.
-  // This guarantees that losing bids cannot be revealed on-chain.
-  assert(amount > curr_highest, "Bid is not higher than the current highest bid");
+  // Verify it's a winning bid (losing bids cannot be revealed)
+  assert(amount > auction.highest_bid, "Bid is not higher than the current highest bid");
 
-  // Update the highest bid and bidder
-  highest_bid = disclose(amount);
-  highest_bidder = disclose(bidder);
+  auctions.insert(disclose(auction_id), Auction {
+    seller: auction.seller,
+    phase: auction.phase,
+    highest_bid: disclose(amount),
+    highest_bidder: disclose(bidder),
+    bid_count: auction.bid_count
+  });
+}
+
+// ── Circuit: settle (Automated Settlement & Dispute Fallback) ───
+// Anyone can call settle once the Reveal phase is over. 
+// It automatically routes escrowed funds based on the finalized state.
+export circuit settle(auction_id: Bytes<32>): [] {
+  assert(auctions.member(disclose(auction_id)), "Auction not found");
+  const auction = auctions.lookup(disclose(auction_id));
+  assert(auction.phase == 1, "Auction must be in Reveal phase to settle");
+
+  auctions.insert(disclose(auction_id), Auction {
+    seller: auction.seller,
+    phase: 2,
+    highest_bid: auction.highest_bid,
+    highest_bidder: auction.highest_bidder,
+    bid_count: auction.bid_count
+  });
+  
+  // If a valid bid was revealed, route funds. If no one revealed (default/dispute), 
+  // highest_bid remains 0 and users can simply refund their full escrow.
+  if (auction.highest_bid > 0) {
+    const winner_key = persistentHash<Vector<2, Bytes<32>>>([disclose(auction_id), auction.highest_bidder]);
+    const winner_escrow = escrows.lookup(winner_key);
+    
+    // Deduct the winning bid from the winner's escrow (they can refund the remainder)
+    escrows.insert(winner_key, (winner_escrow - auction.highest_bid) as Uint<64>);
+    
+    // Transfer funds to the seller's escrow balance
+    const seller_key = persistentHash<Vector<2, Bytes<32>>>([disclose(auction_id), auction.seller]);
+    const seller_escrow = escrows.member(seller_key) ? escrows.lookup(seller_key) : 0;
+    escrows.insert(seller_key, (seller_escrow + auction.highest_bid) as Uint<64>);
+  }
+}
+
+// ── Circuit: refund ─────────────────────────────────────────────
+// Allows losing bidders to reclaim escrow, or anyone if auction was cancelled.
+export circuit refund(auction_id: Bytes<32>, user: Bytes<32>): [] {
+  assert(auctions.member(disclose(auction_id)), "Auction not found");
+  const auction = auctions.lookup(disclose(auction_id));
+  
+  assert(auction.phase >= 2, "Auction must be Settled or Cancelled to claim refunds");
+
+  const map_key = persistentHash<Vector<2, Bytes<32>>>([disclose(auction_id), disclose(user)]);
+  assert(escrows.member(map_key), "No escrow balance found");
+  
+  const balance = escrows.lookup(map_key);
+  assert(balance > 0, "Escrow balance is zero");
+  
+  // Zero out the escrow balance (simulating a token transfer back to the user)
+  escrows.insert(map_key, 0);
 }
