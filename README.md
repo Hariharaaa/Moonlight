@@ -6,7 +6,7 @@
 > **"Bid without revealing. Lock funds without exposing. Win without exposing anyone else."**
 > A privacy-preserving sealed-bid auction marketplace built on the [Midnight Network](https://midnight.network) using Zero-Knowledge proofs. Submitted for **Level 4 – Waxing Gibbous** of the Midnight Builder Challenge.
 
-Follow our journey on X (Twitter): [**@FullMoon_ZK**](https://x.com/FullMoon_ZK)
+Follow our journey on X (Twitter): [**@rapid_snow**](https://x.com/rapid_snow)
 
 ---
 
