@@ -4,7 +4,7 @@
   "description": "FullMoon: Privacy-Preserving Sealed-Bid Auctions on Midnight & Confidential Proof of Reserves (zkPoR)",
   "main": "index.js",
   "scripts": {
-    "compile": "echo 'Skipping compile in CI as managed files are committed'",
+    "compile": "compact compile contracts/auction.compact managed/",
     "compile:full": "compact compile contracts/auction.compact managed/",
     "test": "jest",
     "test:por": "cd zkpor-contracts && npx hardhat test",
