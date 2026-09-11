@@ -4,7 +4,7 @@
 ![Level](https://img.shields.io/badge/Midnight%20Builder%20Challenge-Level%204%20Waxing%20Gibbous-ffeb3b?style=flat-square)
 
 > **"Bid without revealing. Lock funds without exposing. Win without exposing anyone else."**
-> A privacy-preserving sealed-bid auction marketplace built on the [Midnight Network](https://midnight.network) using Zero-Knowledge proofs. Submitted for **Level 4 – Waxing Gibbous** of the Midnight Builder Challenge.
+> A privacy-preserving sealed-bid auction marketplace built on the [Midnight Network](https://midnight.network) using Zero-Knowledge proofs. Submitted for **Level 5 – Full Moon** of the Midnight Builder Challenge.
 
 Follow our journey on X (Twitter): [**@rapid_snow**](https://x.com/rapid_snow)
 
@@ -20,13 +20,22 @@ Follow our journey on X (Twitter): [**@rapid_snow**](https://x.com/rapid_snow)
 
 ---
 
-## ✅ Level 4 Submission Checklist
+## ✅ Level 5 Submission Checklist
 
-- [x] **Working MVP live on Preprod** (Contract deployed, verifiably on-chain).
-- [x] **Documentation (README + setup + usage)** (You are reading it!).
-- [x] **CI/CD pipeline running** on the product repo (See the passing badge above).
-- [x] **Product X profile created**, linked in the README (See above).
-- [x] **Minimum 15 meaningful commits** (Repo has 50+ meaningful commits mapping to architectural updates, UI overhauls, and test expansions).
+- [x] **Working MVP live on Preprod** (Extended with Multi-Seller, Escrow, Dispute/Fallback).
+- [x] **50 Verifiable Preprod Users** (Extracted directly from the indexer/contract state — see `USERS.md`).
+- [x] **Documented Feedback Loop** (In-app prompt tracking user satisfaction and bug reports — see `FEEDBACK.md`).
+- [x] **Documentation Synced** (README and video walkthrough updated).
+- [x] **20+ meaningful commits** (Repo has 60+ meaningful commits).
+
+---
+
+## 👥 Users & Feedback (Level 5 Core)
+
+To fulfill the Level 5 requirements, we built a privacy-preserving extraction script to verifiably prove testnet usage without leaking user privacy. 
+
+- 📜 **[View the 50 Verifiable Users List](USERS.md)**: Generated via `npm run extract-users`.
+- 🗣 **[View the Feedback Loop Log](FEEDBACK.md)**: Tracks features built in response to our Google Form prompts.
 
 ---
 
