@@ -2,9 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getContractInstance } from '../services/contract';
 import { useWalletContext } from '../context/WalletContext';
 import { usePrivateState } from '../hooks/usePrivateState';
-import { PrivacyBadge } from './PrivacyBadge';
-import { PrivacyExplainer } from './PrivacyExplainer';
-import { CountdownTimer } from './CountdownTimer';
 import { EscrowStatus } from './EscrowStatus';
 import { FeedbackPrompt } from './FeedbackPrompt';
 import { Buffer } from 'buffer';
@@ -19,10 +16,10 @@ export const AuctionView: React.FC<{ auctionId: string }> = ({ auctionId }) => {
   const [contract, setContract] = useState<any>(null);
   
   // Auction State
-  const [seller, setSeller] = useState<string>('');
+  const [, setSeller] = useState<string>('');
   const [phase, setPhase] = useState<number>(0); // 0: Bid, 1: Reveal, 2: Settled, 3: Cancelled
   const [highestBid, setHighestBid] = useState<number>(0);
-  const [highestBidder, setHighestBidder] = useState<string>('');
+  const [, setHighestBidder] = useState<string>('');
   const [bidCount, setBidCount] = useState<number>(0);
   
   // Escrow State
@@ -34,7 +31,7 @@ export const AuctionView: React.FC<{ auctionId: string }> = ({ auctionId }) => {
   const [showFeedbackPrompt, setShowFeedbackPrompt] = useState(false);
 
   const deadlineMsRef = useRef<number | null>(null);
-  const [deadlineMs, setDeadlineMs] = useState<number | null>(null);
+  const [, setDeadlineMs] = useState<number | null>(null);
 
   const [isBidding, setIsBidding] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
@@ -45,7 +42,7 @@ export const AuctionView: React.FC<{ auctionId: string }> = ({ auctionId }) => {
 
   const [proofState, setProofState] = useState<ProofState>('none');
   const [error, setError] = useState<string | null>(null);
-  const [txHash, setTxHash] = useState<string | null>(null);
+  const [, setTxHash] = useState<string | null>(null);
 
   const getAuctionIdBytes = useCallback(() => {
     return new Uint8Array(Buffer.from(auctionId, 'hex'));
@@ -79,8 +76,6 @@ export const AuctionView: React.FC<{ auctionId: string }> = ({ auctionId }) => {
     if (!instance) return;
     try {
       const state = await instance.queryState();
-      
-      const idBytes = getAuctionIdBytes();
       
       let auctionData: any = null;
       if (state.auctions && typeof state.auctions.entries === 'function') {
@@ -268,7 +263,6 @@ export const AuctionView: React.FC<{ auctionId: string }> = ({ auctionId }) => {
 
   const phaseName = phase === 0 ? 'Bidding' : phase === 1 ? 'Reveal' : phase === 2 ? 'Settled' : 'Cancelled';
   const phaseEmoji = phase === 0 ? '🔒' : phase === 1 ? '🔓' : phase === 2 ? '🏆' : '❌';
-  const isWinner = highestBidder && highestBidder !== '0'.repeat(64);
 
   return (
     <div className="panel counter-panel">
