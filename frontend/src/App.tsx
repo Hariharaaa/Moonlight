@@ -43,6 +43,17 @@ function App() {
           Execute sealed-bid ZK auctions with zero public bids and mathematically verify exchange
           solvency with Zero-Knowledge Proof of Reserves.
         </p>
+        
+        {/* ── New Here? Onboarding Steps ── */}
+        <div className="onboarding-steps">
+          <h3>🚀 New here? Start with these 3 steps:</h3>
+          <ol>
+            <li><strong>Get Testnet Funds:</strong> Visit the <a href="https://faucet.midnight.network/" target="_blank" rel="noopener noreferrer">Midnight Preprod Faucet</a> to get tNIGHT.</li>
+            <li><strong>Connect Wallet:</strong> Click the "Connect Lace" button in the top right.</li>
+            <li><strong>Place a Bid:</strong> Scroll down to a live auction and place a sealed bid!</li>
+          </ol>
+        </div>
+
         <button
           id="how-it-works-btn"
           className="btn btn-outline hero__onboarding-btn"
