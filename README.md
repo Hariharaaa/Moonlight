@@ -23,7 +23,7 @@ Follow our journey on X (Twitter): [**@rapid_snow**](https://x.com/rapid_snow)
 ## ✅ Level 5 Submission Checklist
 
 - [x] **Working MVP live on Preprod** (Extended with Multi-Seller, Escrow, Dispute/Fallback).
-- [x] **50 Verifiable Preprod Users** (Extracted directly from the indexer/contract state — see `USERS.md`).
+- [x] **59 Verifiable Preprod Users** (Extracted directly from the indexer/contract state — see `USERS.md`).
 - [x] **Documented Feedback Loop** (In-app prompt tracking user satisfaction and bug reports — see `FEEDBACK.md`).
 - [x] **Documentation Synced** (README and video walkthrough updated).
 - [x] **20+ meaningful commits** (Repo has 60+ meaningful commits).
@@ -34,7 +34,8 @@ Follow our journey on X (Twitter): [**@rapid_snow**](https://x.com/rapid_snow)
 
 To fulfill the Level 5 requirements, we built a privacy-preserving extraction script to verifiably prove testnet usage without leaking user privacy. 
 
-- 🗣 **View the Feedback Loop Log**: Tracks features built in response to our Google Form prompts. ([View Raw Form Submissions](https://docs.google.com/spreadsheets/d/15FhkRDAK9Yvz2xwC-CkrPPjlFt34hNdZdsdMI1PKDLA/edit?resourcekey=&gid=2040930783#gid=2040930783))
+- 📜 **[View the 59 Verifiable Users List](USERS.md)**: Generated via `npm run extract-users`.
+- 🗣 **[View the Feedback Loop Log](FEEDBACK.md)**: Tracks features built in response to our Google Form prompts. ([View Raw Form Submissions](https://docs.google.com/spreadsheets/d/15FhkRDAK9Yvz2xwC-CkrPPjlFt34hNdZdsdMI1PKDLA/edit?resourcekey=&gid=2040930783#gid=2040930783))
 - 💬 **Submit Feedback**: [https://github.com/Hariharaaa/Moonlight/issues](https://github.com/Hariharaaa/Moonlight/issues)
 
 ---
