@@ -11,7 +11,7 @@ managed/node_modules
 managed/package.json
 
 # Binary ZK intermediate representation files (not human-readable)
-*.bzkir
+
 
 # Local wallet state
 .midnight-wallet-state/
