@@ -1,0 +1,8 @@
+node_modules
+dist
+build
+coverage
+managed
+zkpor-contracts/artifacts
+zkpor-contracts/cache
+mn-demo/managed
