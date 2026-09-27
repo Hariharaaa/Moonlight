@@ -39,6 +39,7 @@ export const WalletButton: React.FC = () => {
           className="btn btn-primary"
           onClick={connect}
           disabled={isConnecting}
+          aria-label="Connect Lace Wallet"
         >
           {isConnecting ? (
             <>
