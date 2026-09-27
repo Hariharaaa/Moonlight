@@ -5,11 +5,18 @@ import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { ProofOfReservesPanel } from './components/ProofOfReservesPanel';
 import { OnboardingOverlay } from './components/OnboardingOverlay';
 
+/**
+ * Defines the main navigation tabs available in the application.
+ */
 type Tab = 'auction' | 'por' | 'analytics';
 
 // Session-scoped: show onboarding once per browser session (not persisted to localStorage)
 let hasSeenOnboarding = false;
 
+/**
+ * Main application component.
+ * Manages tab state, wallet connection status, and onboarding overlay.
+ */
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('auction');
   const [showOnboarding, setShowOnboarding] = useState(!hasSeenOnboarding);
@@ -48,7 +55,7 @@ function App() {
         <div className="onboarding-steps">
           <h3>🚀 New here? Start with these 3 steps:</h3>
           <ol>
-            <li><strong>Get Testnet Funds:</strong> Visit the <a href="https://faucet.midnight.network/" target="_blank" rel="noopener noreferrer">Midnight Preprod Faucet</a> to get tNIGHT.</li>
+            <li><strong>Get Testnet Funds:</strong> Visit the <a href="https://midnight-tmnight-preprod.nethermind.dev" target="_blank" rel="noopener noreferrer">Midnight Preprod Faucet</a> to get tNIGHT.</li>
             <li><strong>Connect Wallet:</strong> Click the "Connect Lace" button in the top right.</li>
             <li><strong>Place a Bid:</strong> Scroll down to a live auction and place a sealed bid!</li>
           </ol>
