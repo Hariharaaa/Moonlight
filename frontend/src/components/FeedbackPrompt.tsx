@@ -5,7 +5,7 @@ interface FeedbackPromptProps {
   onDismiss: () => void;
 }
 
-const FORM_URL = import.meta.env.VITE_FEEDBACK_FORM_URL || 'https://forms.gle/PLACEHOLDER';
+const FORM_URL = import.meta.env.VITE_FEEDBACK_FORM_URL || 'https://github.com/Hariharaaa/Moonlight/issues';
 
 export const FeedbackPrompt: React.FC<FeedbackPromptProps> = ({ show, onDismiss }) => {
   const [isExiting, setIsExiting] = useState(false);

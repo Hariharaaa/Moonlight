@@ -33,8 +33,8 @@ export const NETWORK_CONFIGS: Record<NetworkId, NetworkConfig> = {
 };
 
 // We will use local devnet for now, and switch to preprod for deployment.
-// Vercel deployment will set VITE_NETWORK_ID="preprod".
-export const ACTIVE_NETWORK: NetworkId = (import.meta.env.VITE_NETWORK_ID as NetworkId) || 'undeployed';
+// Vercel deployment will set VITE_NETWORK_ID="preprod" via .env.production or fallback to preprod.
+export const ACTIVE_NETWORK: NetworkId = (import.meta.env.VITE_NETWORK_ID as NetworkId) || 'preprod';
 export const config = NETWORK_CONFIGS[ACTIVE_NETWORK];
 
 // From deployment-config.json (Preprod address)
