@@ -5,6 +5,7 @@ import {
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { FetchZkConfigProvider } from '@midnight-ntwrk/midnight-js-fetch-zk-config-provider';
+import { createProofProvider } from '@midnight-ntwrk/midnight-js-types';
 import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
 import { StateValue } from '@midnight-ntwrk/compact-runtime';
 import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
@@ -100,7 +101,8 @@ export async function createProviders(walletApi: ConnectedAPI) {
 
   const publicDataProvider = indexerPublicDataProvider(indexerUri, indexerWsUri);
 
-  const proofProvider = await walletApi.getProvingProvider(zkConfigProvider);
+  const provingProvider = await walletApi.getProvingProvider(zkConfigProvider);
+  const proofProvider = createProofProvider(provingProvider);
 
   return {
     privateStateProvider: levelPrivateStateProvider({
