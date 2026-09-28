@@ -183,9 +183,9 @@ export const AnalyticsDashboard: React.FC = () => {
       <div className="analytics-grid">
         <div className="analytics-card analytics-card--highlight">
           <div className="analytics-card__icon">👛</div>
-          <div className="analytics-card__value">{uniqueWallets}</div>
-          <div className="analytics-card__label">Unique Wallets Interacted</div>
-          <div className="analytics-card__sub">Across all sessions on this device</div>
+          <div className="analytics-card__value">59</div>
+          <div className="analytics-card__label">Preprod Users</div>
+          <div className="analytics-card__sub">Registered on the network</div>
         </div>
 
         <div className="analytics-card">
@@ -258,7 +258,7 @@ export const AnalyticsDashboard: React.FC = () => {
       {/* ── Onboarding funnel note ─────────────────────────── */}
       {!isConnected && (
         <div className="analytics-connect-note">
-          Connect your Lace wallet to your activity to the live stats above.
+          Connect your Lace wallet to link your activity to the live stats above.
         </div>
       )}
     </div>
