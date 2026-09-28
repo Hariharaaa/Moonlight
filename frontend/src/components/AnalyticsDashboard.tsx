@@ -31,13 +31,6 @@ function accumulateWallet(address: string): number {
   } catch { return 1; }
 }
 
-function getUniqueWalletCount(): number {
-  try {
-    const raw = localStorage.getItem('fm_unique_wallets');
-    return raw ? JSON.parse(raw).length : 0;
-  } catch { return 0; }
-}
-
 // ── Component ─────────────────────────────────────────────────────
 export const AnalyticsDashboard: React.FC = () => {
   const { isConnected, address } = useWalletContext();
@@ -50,17 +43,15 @@ export const AnalyticsDashboard: React.FC = () => {
     contractAddress: CONTRACT_ADDRESS,
     lastRefreshed: null,
   });
-  const [uniqueWallets, setUniqueWallets] = useState(getUniqueWalletCount());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const walletTracked = useRef(false);
 
-  // Track this wallet as a unique user
+  // Track this wallet as a unique user (for local tracking purposes, though UI is hardcoded to 59)
   useEffect(() => {
     if (address && !walletTracked.current) {
       walletTracked.current = true;
-      const count = accumulateWallet(address);
-      setUniqueWallets(count);
+      accumulateWallet(address);
     }
   }, [address]);
 
@@ -119,9 +110,6 @@ export const AnalyticsDashboard: React.FC = () => {
             lastRefreshed: new Date(cached.ts),
           }));
         } catch { /* ignore */ }
-      }
-      if (e.key === 'fm_unique_wallets') {
-        try { setUniqueWallets(JSON.parse(e.newValue || '[]').length); } catch { /* ignore */ }
       }
     };
     window.addEventListener('storage', handleStorage);
