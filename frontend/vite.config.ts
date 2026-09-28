@@ -52,6 +52,11 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
       },
+      '/proof-server': {
+        target: 'https://proof-server.preprod.midnight.network',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/proof-server/, ''),
+      },
     },
     // Serve managed ZK artifacts during dev
     fs: {
