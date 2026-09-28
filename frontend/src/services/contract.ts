@@ -5,7 +5,7 @@ import {
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { FetchZkConfigProvider } from '@midnight-ntwrk/midnight-js-fetch-zk-config-provider';
-import { createProofProvider } from '@midnight-ntwrk/midnight-js-types';
+import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
 import { StateValue } from '@midnight-ntwrk/compact-runtime';
 import type { ConnectedAPI } from '@midnight-ntwrk/dapp-connector-api';
@@ -76,14 +76,24 @@ export async function createProviders(walletApi: ConnectedAPI) {
     },
     submitTx: async (tx: any) => {
       console.log("submitTx called with", tx);
-      if (typeof tx === 'string') {
-        return walletApi.submitTransaction(tx);
-      } else if (tx && tx.serialize) {
-        const hex = Array.from(tx.serialize() as Uint8Array).map(b => b.toString(16).padStart(2, '0')).join('');
-        console.log("submitTx serialized hex:", hex);
-        return walletApi.submitTransaction(hex);
+      let txPayload: string | Uint8Array;
+      if (typeof tx === 'string' || tx instanceof Uint8Array) {
+        txPayload = tx;
+      } else if (tx && typeof tx.serialize === 'function') {
+        txPayload = tx.serialize() as Uint8Array;
       } else {
-        return walletApi.submitTransaction(tx as any);
+        txPayload = tx;
+      }
+      
+      try {
+        if (txPayload instanceof Uint8Array) {
+           const hex = Array.from(txPayload).map(b => b.toString(16).padStart(2, '0')).join('');
+           return await walletApi.submitTransaction(hex);
+        }
+        return await walletApi.submitTransaction(txPayload as string);
+      } catch (err: any) {
+        console.error("Lace submitTransaction failed:", err);
+        throw err;
       }
     },
   };
@@ -98,11 +108,11 @@ export async function createProviders(walletApi: ConnectedAPI) {
   // that don't have our contract state.
   const indexerUri = networkConfig.indexer;
   const indexerWsUri = networkConfig.indexerWS;
+  const proverUri = networkConfig.proofServer;
 
   const publicDataProvider = indexerPublicDataProvider(indexerUri, indexerWsUri);
 
-  const provingProvider = await walletApi.getProvingProvider(zkConfigProvider);
-  const proofProvider = createProofProvider(provingProvider);
+  const proofProvider = httpClientProofProvider(proverUri, zkConfigProvider);
 
   return {
     privateStateProvider: levelPrivateStateProvider({
