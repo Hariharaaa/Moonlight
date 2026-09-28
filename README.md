@@ -14,7 +14,7 @@ Follow our journey on X (Twitter): [**@rapid_snow**](https://x.com/rapid_snow)
 
 | | |
 |---|---|
-| **Live Marketplace UI** | [https://moonlight-two-mu.vercel.app/](https://moonlight-two-mu.vercel.app/) |
+| **Live Marketplace UI** | [https://moonlight-nine-theta.vercel.app/](https://moonlight-nine-theta.vercel.app/) |
 | **Preprod Contract Address** | `68cfee8397ddbe8d376801af3bfd8c3787da1be37dd8747ea0d390bfde32eed7` |
 | **Network** | Midnight Preprod Testnet |
 
