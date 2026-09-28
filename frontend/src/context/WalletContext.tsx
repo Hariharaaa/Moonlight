@@ -48,22 +48,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       }
 
       let api: ConnectedAPI | null = null;
-      let lastError: any = null;
-      const networksToTry = [ACTIVE_NETWORK, 'devnet', 'undeployed', 'preview', 'preprod'];
-
-      for (const net of networksToTry) {
-        try {
-          console.log(`Attempting to connect with network ID: ${net}`);
-          api = await wallet.connect(net);
-          console.log(`Successfully connected to ${net}!`);
-          break;
-        } catch (err: any) {
-          console.warn(`Failed to connect to ${net}:`, err?.message);
-          lastError = err;
-        }
+      try {
+        console.log(`Attempting to connect with network ID: ${ACTIVE_NETWORK}`);
+        api = await wallet.connect(ACTIVE_NETWORK);
+        console.log(`Successfully connected to ${ACTIVE_NETWORK}!`);
+      } catch (err: any) {
+        throw new Error(err?.message || `Failed to connect to ${ACTIVE_NETWORK}. Please make sure your Lace wallet is set to ${ACTIVE_NETWORK}.`);
       }
-
-      if (!api) throw lastError || new Error('Failed to connect to any valid network.');
 
       const unshieldedAddress = await api.getUnshieldedAddress();
 
