@@ -2,7 +2,6 @@ import {
   createCircuitCallTxInterface,
   getPublicStates,
 } from '@midnight-ntwrk/midnight-js-contracts';
-import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { FetchZkConfigProvider } from '@midnight-ntwrk/midnight-js-fetch-zk-config-provider';
@@ -98,9 +97,10 @@ export async function createProviders(walletApi: ConnectedAPI) {
   // that don't have our contract state.
   const indexerUri = networkConfig.indexer;
   const indexerWsUri = networkConfig.indexerWS;
-  const proverUri = networkConfig.proofServer;
 
   const publicDataProvider = indexerPublicDataProvider(indexerUri, indexerWsUri);
+
+  const proofProvider = await walletApi.getProvingProvider(zkConfigProvider);
 
   return {
     privateStateProvider: levelPrivateStateProvider({
@@ -110,7 +110,7 @@ export async function createProviders(walletApi: ConnectedAPI) {
     }),
     publicDataProvider,
     zkConfigProvider,
-    proofProvider: httpClientProofProvider(proverUri, zkConfigProvider),
+    proofProvider,
     walletProvider,
     midnightProvider: walletProvider,
   };
