@@ -3,6 +3,7 @@ import { AuctionView } from './AuctionView';
 import { useWalletContext } from '../context/WalletContext';
 import { getContractInstance } from '../services/contract';
 import { Buffer } from 'buffer';
+import { toPureBytes } from '../utils/bytes';
 
 export interface AuctionData {
   id: string;
@@ -94,9 +95,9 @@ export const Marketplace: React.FC = () => {
       const encoder = new TextEncoder();
       const data = encoder.encode(addr.unshieldedAddress);
       const sellerBytesBuffer = await crypto.subtle.digest('SHA-256', data);
-      const sellerBytes = new Uint8Array(sellerBytesBuffer);
+      const sellerBytes = toPureBytes(sellerBytesBuffer);
 
-      await contract.callTx.create_auction(idBytes, sellerBytes);
+      await contract.callTx.create_auction(toPureBytes(idBytes), sellerBytes);
       await refreshAuctions(contract);
     } catch (err: any) {
       setError(err?.message || 'Failed to create auction');

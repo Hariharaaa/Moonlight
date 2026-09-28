@@ -5,6 +5,7 @@ import { usePrivateState } from '../hooks/usePrivateState';
 import { EscrowStatus } from './EscrowStatus';
 import { FeedbackPrompt } from './FeedbackPrompt';
 import { Buffer } from 'buffer';
+import { toPureBytes } from '../utils/bytes';
 
 type ProofState = 'none' | 'proving' | 'bid' | 'reveal' | 'advance' | 'error';
 type EscrowPhase = 'none' | 'locked' | 'pending_reveal' | 'settled' | 'refunded';
@@ -109,7 +110,7 @@ export const AuctionView: React.FC<{ auctionId: string }> = ({ auctionId }) => {
     const encoder = new TextEncoder();
     const data = encoder.encode(addr.unshieldedAddress);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    return new Uint8Array(hashBuffer);
+    return toPureBytes(hashBuffer);
   }, [walletApi]);
 
   const handleBid = async (e: React.FormEvent) => {
@@ -128,7 +129,7 @@ export const AuctionView: React.FC<{ auctionId: string }> = ({ auctionId }) => {
       setBidSalt(saltHex);
 
       const bidderBytes = await getBidderBytes();
-      const idBytes = getAuctionIdBytes();
+      const idBytes = toPureBytes(Buffer.from(auctionId, 'hex'));
 
       // ZK Prover asserts: amount <= lock_amount
       const tx = await contract.callTx.bid(
@@ -136,7 +137,7 @@ export const AuctionView: React.FC<{ auctionId: string }> = ({ auctionId }) => {
         bidderBytes, 
         BigInt(lockAmount), 
         BigInt(bidAmount), 
-        saltBytes
+        toPureBytes(saltBytes)
       );
       
       setTxHash(typeof tx === 'string' ? tx : 'confirmed');
@@ -171,9 +172,9 @@ export const AuctionView: React.FC<{ auctionId: string }> = ({ auctionId }) => {
     try {
       const bidderBytes = await getBidderBytes();
       const saltBytes = new Uint8Array(Buffer.from(bidSalt, 'hex'));
-      const idBytes = getAuctionIdBytes();
+      const idBytes = toPureBytes(Buffer.from(auctionId, 'hex'));
 
-      const tx = await contract.callTx.reveal(idBytes, bidderBytes, BigInt(bidAmount), saltBytes);
+      const tx = await contract.callTx.reveal(idBytes, bidderBytes, BigInt(bidAmount), toPureBytes(saltBytes));
       
       setTxHash(typeof tx === 'string' ? tx : 'confirmed');
       await refreshState();
@@ -202,7 +203,7 @@ export const AuctionView: React.FC<{ auctionId: string }> = ({ auctionId }) => {
     setError(null);
     setProofState('proving');
     try {
-      await contract.callTx.advance_phase(getAuctionIdBytes());
+      await contract.callTx.advance_phase(toPureBytes(Buffer.from(auctionId, 'hex')));
       await refreshState();
       setProofState('advance');
       setTimeout(() => setProofState('none'), 5000);
@@ -221,7 +222,7 @@ export const AuctionView: React.FC<{ auctionId: string }> = ({ auctionId }) => {
     setIsCancelling(true);
     try {
       const bidderBytes = await getBidderBytes();
-      await contract.callTx.cancel_auction(getAuctionIdBytes(), bidderBytes);
+      await contract.callTx.cancel_auction(toPureBytes(Buffer.from(auctionId, 'hex')), bidderBytes);
       await refreshState();
     } catch (err: any) {
       setError(err?.message || 'Failed to cancel');
@@ -234,7 +235,7 @@ export const AuctionView: React.FC<{ auctionId: string }> = ({ auctionId }) => {
     if (!contract) return;
     setIsSettling(true);
     try {
-      await contract.callTx.settle(getAuctionIdBytes());
+      await contract.callTx.settle(toPureBytes(Buffer.from(auctionId, 'hex')));
       await refreshState();
     } catch (err: any) {
       setError(err?.message || 'Failed to settle');
@@ -248,7 +249,7 @@ export const AuctionView: React.FC<{ auctionId: string }> = ({ auctionId }) => {
     setIsRefunding(true);
     try {
       const bidderBytes = await getBidderBytes();
-      await contract.callTx.refund(getAuctionIdBytes(), bidderBytes);
+      await contract.callTx.refund(toPureBytes(Buffer.from(auctionId, 'hex')), bidderBytes);
       setEscrowBalance(0);
       setEscrowPhase('refunded');
       await refreshState();
