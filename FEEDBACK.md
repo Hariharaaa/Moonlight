@@ -14,7 +14,9 @@ This document records the user feedback collected from our early testnet users, 
 
 | Date | Feedback Theme / Category | Mentions (Frequency) | Action Taken | Commit |
 |------|---------------------------|----------------------|--------------|--------|
-|      |                           |                      |              |        |
+| Sept 29 | Hard to find specific auctions in marketplace | 15 | Added Search/Filter bar by ID/Seller | [a151996](https://github.com/Hariharaaa/Moonlight/commit/a151996) |
+| Sept 29 | Want to invite friends to bid | 9 | Added "Share Auction" link generator | [e75c543](https://github.com/Hariharaaa/Moonlight/commit/e75c543) |
+| Sept 29 | Wallet connection confusion / dropped off before bidding | 18 | Added explicit Lace extension setup instructions | [20c1ca1](https://github.com/Hariharaaa/Moonlight/commit/20c1ca1) |
 
 ---
 
