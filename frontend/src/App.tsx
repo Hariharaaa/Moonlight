@@ -53,8 +53,9 @@ function App() {
         
         {/* ── New Here? Onboarding Steps ── */}
         <div className="onboarding-steps">
-          <h3>🚀 New here? Start with these 3 steps:</h3>
+          <h3>🚀 New here? Start with these 4 steps:</h3>
           <ol>
+            <li><strong>Install Lace:</strong> Install the <a href="https://chromewebstore.google.com/detail/lace/djkgecafgjdhpjofgnjajneahcgpeocd" target="_blank" rel="noopener noreferrer">Lace Wallet Chrome Extension</a> and set the network to <strong>Midnight Preprod</strong>.</li>
             <li><strong>Get Testnet Funds:</strong> Visit the <a href="https://midnight-tmnight-preprod.nethermind.dev" target="_blank" rel="noopener noreferrer">Midnight Preprod Faucet</a> to get tNIGHT.</li>
             <li><strong>Connect Wallet:</strong> Click the "Connect Lace" button in the top right.</li>
             <li><strong>Place a Bid:</strong> Scroll down to a live auction and place a sealed bid!</li>
