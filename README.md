@@ -56,6 +56,24 @@ In Level 4, FullMoon evolved from a single-auction demo into a real **Marketplac
 4. **Cancellation**: Sellers can cancel auctions if no bids are placed.
 5. **Refund Sweeps**: Any bidder who loses, or any bidder in a cancelled auction, can securely claim their escrow back.
 
+## 🏗 Tech Stack & Architecture
+
+FullMoon leverages a modern decentralized stack combining cutting-edge zero-knowledge infrastructure with a robust frontend:
+- **Smart Contracts (Compact)**: Written in Midnight's native Compact language, ensuring mathematically proven execution of the sealed-bid logic.
+- **Frontend (React + Vite)**: A lightning-fast Single Page Application (SPA) providing a seamless, Web2-like user experience.
+- **Client-Side Prover (Midnight JS SDK)**: Generates ZK proofs directly in the user's browser (via WebAssembly), ensuring that secrets (like bid amounts and salts) never leave the user's device.
+- **On-chain Data (Indexer)**: Real-time global state synchronization via the Midnight GraphQL Indexer.
+
+---
+
+## 🏦 Zero-Knowledge Proof of Reserves (zkPoR)
+
+Beyond the core auction marketplace, FullMoon implements a first-of-its-kind **Confidential Proof of Reserves**.
+When users lock escrow to bid, they trust the contract. To prove solvency without leaking total liabilities or individual balances, we use a separate ZK-SNARK (Groth16) workflow:
+- **Verifiable Solvency**: The platform periodically publishes a Merkle Root of all user balances (liabilities).
+- **Zero Balances Revealed**: Users can independently generate a local inclusion proof (using `snarkjs`) to verify their specific locked escrow is included in the published Merkle Root.
+- **Confidentiality**: Observers can verify the cryptographic proof of solvency without learning the total liquidity of the platform or the exact balances of participating users.
+
 ---
 
 ## 🔒 Privacy Model
@@ -134,3 +152,18 @@ Open [http://localhost:3000](http://localhost:3000), connect your Lace wallet se
 ```bash
 cd mn-demo && docker compose up -d
 ```
+
+---
+
+## 🔧 Deployment & Troubleshooting
+
+### Vercel Deployment & CORS Bypassing
+Because the Midnight public proof server (`https://proof-server.preprod.midnight.network`) currently restricts Cross-Origin Resource Sharing (CORS) for direct browser requests, deploying FullMoon to platforms like Vercel requires a reverse proxy. 
+
+We solved this seamlessly for production:
+- **`vercel.json` Rewrites**: Configured to intercept all `/proof-server/*` API calls and invisibly forward them to the Preprod proof server server-side, entirely bypassing browser CORS restrictions.
+- **Vite Proxy**: For local development, `vite.config.ts` handles the exact same proxying, ensuring parity between dev and prod environments.
+
+### Lace Wallet Troubleshooting
+- **"Unexpected error submitting scoped transaction"**: Ensure your Lace wallet is set to the **Midnight Preprod** network, NOT the mainnet or preview network.
+- **"Failed to fetch" (Local Dev)**: Ensure Docker is running and the local proof server is spun up via `docker compose`.
