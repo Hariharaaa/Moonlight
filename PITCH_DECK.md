@@ -1,5 +1,5 @@
 # FullMoon — Pitch Deck Content
-## Midnight Builder Challenge · Level 5 Blue Belt
+## Midnight Builder Challenge · Level 6 Supermoon
 
 > **Instructions:** Use this as your slide content source. Each slide has a title and 3–5 punchy bullets. Keep visuals minimal — let the bullets carry the message. Suggested tool: Canva, Pitch.com, or Google Slides with a dark theme.
 

@@ -113,7 +113,7 @@ function App() {
       <footer className="app-footer">
         <p>
           Built for the{' '}
-          <strong>Midnight Builder Challenge — Level 5 (Blue Belt)</strong>
+          <strong>Midnight Builder Challenge — Level 6 (Supermoon)</strong>
           {' · '}
           <a href="https://moonlight-two-mu.vercel.app" target="_blank" rel="noopener noreferrer">
             Live Demo

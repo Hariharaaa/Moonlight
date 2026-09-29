@@ -1,6 +1,6 @@
 // ============================================================
 // auction.compact — Midnight Network Sealed-Bid Auction
-// FullMoon Project — Midnight Builder Challenge Level 4
+// FullMoon Project — Midnight Builder Challenge Level 6
 // ============================================================
 //
 // PRIVACY MODEL:
@@ -14,7 +14,7 @@
 //     - `amount`        : The actual bid amount (Uint<64>).
 //     - `salt`          : 32 bytes of randomness.
 //
-//   FEATURES (Level 4):
+//   FEATURES (Level 6):
 //     - ESCROW: When bidding, a user publicly locks `lock_amount`. The ZK circuit
 //       proves their private `amount <= lock_amount` without revealing the exact bid.
 //     - MULTI-AUCTION: Supports concurrent auctions via `auction_id`.
