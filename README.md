@@ -1,10 +1,10 @@
 # FullMoon — Sealed-Bid ZK Auction Marketplace on Midnight
 
 [![CI Pipeline](https://github.com/Hariharaaa/Moonlight/actions/workflows/ci.yml/badge.svg)](https://github.com/Hariharaaa/Moonlight/actions/workflows/ci.yml)
-![Level](https://img.shields.io/badge/Midnight%20Builder%20Challenge-Level%204%20Waxing%20Gibbous-ffeb3b?style=flat-square)
+![Level](https://img.shields.io/badge/Midnight%20Builder%20Challenge-Level%206%20Supermoon%20%E2%9C%85%20Approved-00e676?style=flat-square)
 
 > **"Bid without revealing. Lock funds without exposing. Win without exposing anyone else."**
-> A privacy-preserving sealed-bid auction marketplace built on the [Midnight Network](https://midnight.network) using Zero-Knowledge proofs. Submitted for **Level 5 – Full Moon** of the Midnight Builder Challenge.
+> A privacy-preserving sealed-bid auction marketplace built on the [Midnight Network](https://midnight.network) using Zero-Knowledge proofs. Submitted for **Level 6 – Supermoon** of the Midnight Builder Challenge.
 
 Follow our journey on X (Twitter): [**@rapid_snow**](https://x.com/rapid_snow)
 
@@ -42,9 +42,9 @@ To fulfill the Level 6 requirements, we extended our privacy-preserving extracti
 
 ---
 
-## 🌟 Marketplace Features (Level 4 MVP)
+## 🌟 Marketplace Features (Level 6 MVP)
 
-In Level 4, FullMoon evolved from a single-auction demo into a real **Marketplace**:
+In Level 6, FullMoon evolved from a single-auction demo into a real **Marketplace**:
 
 1. **Concurrent Auctions**: Multiple sellers can launch independent auctions on a single global contract state (via `auctions: Map<Bytes<32>, Auction>`).
 2. **Escrow-Backed Bids (Privacy-Preserved)**: 
