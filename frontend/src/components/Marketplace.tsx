@@ -18,6 +18,7 @@ export const Marketplace: React.FC = () => {
   const [contract, setContract] = useState<any>(null);
   const [auctions, setAuctions] = useState<AuctionData[]>([]);
   const [selectedAuctionId, setSelectedAuctionId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,22 +118,56 @@ export const Marketplace: React.FC = () => {
     );
   }
 
+  const filteredAuctions = auctions.filter(a => 
+    a.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    a.seller.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleShare = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}/?auction=${id}`;
+    navigator.clipboard.writeText(url);
+    alert('Auction link copied to clipboard! Share it with bidders.');
+  };
+
   return (
     <div className="marketplace-container panel">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h2>Live Auctions Marketplace</h2>
         <button className="btn btn-primary" onClick={handleCreateAuction} disabled={isCreating || !isConnected}>
           {isCreating ? 'Creating...' : '+ Create New Auction'}
         </button>
       </div>
 
+      <div style={{ marginBottom: '2rem' }}>
+        <input 
+          type="text" 
+          placeholder="🔍 Search by Item # or Seller Address..." 
+          className="form-control"
+          style={{ width: '100%', maxWidth: '400px' }}
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+        />
+      </div>
+
       {error && <div className="error-banner">{error}</div>}
 
       <div className="auctions-grid" style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
-        {auctions.map(a => (
+        {filteredAuctions.map(a => (
           <div key={a.id} className="action-card active" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }} onClick={() => setSelectedAuctionId(a.id)}>
             <div className="card-phase-badge">{a.phase === 0 ? 'Bidding' : a.phase === 1 ? 'Reveal' : a.phase === 2 ? 'Settled' : 'Cancelled'}</div>
-            <h3>Item #{a.id.substring(0, 8)}</h3>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <h3>Item #{a.id.substring(0, 8)}</h3>
+              <button 
+                className="btn btn-outline btn-xs" 
+                onClick={(e) => handleShare(e, a.id)}
+                title="Share this auction"
+              >
+                🔗 Share
+              </button>
+            </div>
+
             <div style={{ margin: '1rem 0', flex: 1 }}>
               <div style={{color: 'var(--text-muted)'}}><strong>Seller:</strong> {a.seller.substring(0, 10)}...</div>
               <div style={{marginTop: '0.5rem', fontSize: '1.1rem'}}><strong>Bids:</strong> {a.bidCount} 🔒</div>
@@ -141,8 +176,8 @@ export const Marketplace: React.FC = () => {
             <button className="btn btn-outline full-width">Enter Auction</button>
           </div>
         ))}
-        {auctions.length === 0 && (
-          <p>No active auctions found. Create one to get started!</p>
+        {filteredAuctions.length === 0 && (
+          <p>No active auctions found matching your search. Create one to get started!</p>
         )}
       </div>
     </div>
