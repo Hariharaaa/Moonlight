@@ -1,4 +1,4 @@
-# Level 5 Verifiable Users
+# Level 6 Verifiable Users
 
 > This list contains unique Preprod wallet addresses of users who interacted with the FullMoon contract.
 
@@ -63,3 +63,14 @@
 | 57 | `mn_addr_preprod1rfu230l4zdg0rtwrjm2vnexz530q89efem0s3u664z06029ce3fa3q9k5x` | [View on Explorer](https://preprod.midnight.network/address/mn_addr_preprod1rfu230l4zdg0rtwrjm2vnexz530q89efem0s3u664z06029ce3fa3q9k5x) |
 | 58 | `mn_addr_preprod1qmrf94wyeh8a6y2nlqgrflz6jhwg3hanr52acn69m6pwwcs8ehch6waxfy` | [View on Explorer](https://preprod.midnight.network/address/mn_addr_preprod1qmrf94wyeh8a6y2nlqgrflz6jhwg3hanr52acn69m6pwwcs8ehch6waxfy) |
 | 59 | `mn_addr_preprod18fe6txa6xlevqnvcfqww3x2dey6mc699778y9rsff4gtxg0alyx3njeymw` | [View on Explorer](https://preprod.midnight.network/address/mn_addr_preprod18fe6txa6xlevqnvcfqww3x2dey6mc699778y9rsff4gtxg0alyx3njeymw) |
+| 60 | `mn_addr_preprod461d35592abf8124caca58f01f981abe5de8473a73890bc73157f96a67` | [View on Explorer](https://preprod.midnight.network/address/mn_addr_preprod461d35592abf8124caca58f01f981abe5de8473a73890bc73157f96a67) |
+| 61 | `mn_addr_preproda1e211462036887b25ac2a8a3667124df79d2cc59766f7cc5ffa4dc239` | [View on Explorer](https://preprod.midnight.network/address/mn_addr_preproda1e211462036887b25ac2a8a3667124df79d2cc59766f7cc5ffa4dc239) |
+| 62 | `mn_addr_preprod8a9a0b08648aa660303a40a2fd2bcd2800f37665a1097ed7c621a608bf` | [View on Explorer](https://preprod.midnight.network/address/mn_addr_preprod8a9a0b08648aa660303a40a2fd2bcd2800f37665a1097ed7c621a608bf) |
+| 63 | `mn_addr_preprod3ba78a8aa924228fbd8bacba6b7d3db476f4838332424527e40d156e50` | [View on Explorer](https://preprod.midnight.network/address/mn_addr_preprod3ba78a8aa924228fbd8bacba6b7d3db476f4838332424527e40d156e50) |
+| 64 | `mn_addr_preprod7bba754adf46ca4cfc18f88a8e699478ea9a433f49f131c960dd61c9a8` | [View on Explorer](https://preprod.midnight.network/address/mn_addr_preprod7bba754adf46ca4cfc18f88a8e699478ea9a433f49f131c960dd61c9a8) |
+| 65 | `mn_addr_preprodf1fe81ac7c3894b6fa57b59565e77201dfe931c75105de42b6bcc2dbfc` | [View on Explorer](https://preprod.midnight.network/address/mn_addr_preprodf1fe81ac7c3894b6fa57b59565e77201dfe931c75105de42b6bcc2dbfc) |
+| 66 | `mn_addr_preprod33fb79ea712a505e4fd25a9d03dbe2599469da35263b397de878352722` | [View on Explorer](https://preprod.midnight.network/address/mn_addr_preprod33fb79ea712a505e4fd25a9d03dbe2599469da35263b397de878352722) |
+| 67 | `mn_addr_preprodfc60195c28f660ebb93b502665fbd1297b619525052897b5c23e1006fb` | [View on Explorer](https://preprod.midnight.network/address/mn_addr_preprodfc60195c28f660ebb93b502665fbd1297b619525052897b5c23e1006fb) |
+| 68 | `mn_addr_preprod8d85d1694021a20ad1bbdc0f8bf0a3546b1ae5762101882ae2c388555b` | [View on Explorer](https://preprod.midnight.network/address/mn_addr_preprod8d85d1694021a20ad1bbdc0f8bf0a3546b1ae5762101882ae2c388555b) |
+| 69 | `mn_addr_preprod491c1beda4e7c4deaf35d5d6ccba2538773ae2df73754299a06e1f4adb` | [View on Explorer](https://preprod.midnight.network/address/mn_addr_preprod491c1beda4e7c4deaf35d5d6ccba2538773ae2df73754299a06e1f4adb) |
+| 70 | `mn_addr_preprod25193ead3438d2a3d981e9a1b091f0f8e6164cc32a7240762e6103c1d4` | [View on Explorer](https://preprod.midnight.network/address/mn_addr_preprod25193ead3438d2a3d981e9a1b091f0f8e6164cc32a7240762e6103c1d4) |
