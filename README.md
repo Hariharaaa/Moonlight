@@ -24,7 +24,7 @@ Follow our journey on X (Twitter): [**@rapid_snow**](https://x.com/rapid_snow)
 ## ✅ Level 6 Submission Checklist
 
 - [x] **Working MVP live on Preprod** (Extended with Multi-Seller, Escrow, Dispute/Fallback).
-- [x] **70 Verifiable Preprod Users** (Extracted directly from the indexer/contract state — see `USERS.md`).
+- [x] **70 Verifiable Preprod Users** (Extracted directly from the indexer/contract state — see `LAUNCH_USERS.md`).
 - [x] **Continuous Documented Feedback Loop** (In-app prompt tracking user satisfaction and bug reports across Round 1 & Round 2 — see `FEEDBACK.md`).
 - [x] **Documentation Synced** (README updated with recent feature additions).
 - [x] **30+ meaningful commits** (Repo has 60+ meaningful commits).
@@ -35,7 +35,7 @@ Follow our journey on X (Twitter): [**@rapid_snow**](https://x.com/rapid_snow)
 
 To fulfill the Level 6 requirements, we extended our privacy-preserving extraction script to verifiably prove testnet usage without leaking user privacy, and continued our continuous feedback loop.
 
-- 📜 **[View the 70 Verifiable Users List](USERS.md)**: Generated via `npm run extract-users`.
+- 📜 **[View the 70 Verifiable Users List](LAUNCH_USERS.md)**: Generated via `npm run extract-users`.
 - 🗣 **[View the Feedback Loop Log](FEEDBACK.md)**: Tracks features built in response to our Google Form prompts.
   - **Level 5 to Level 6 Evolution**: Based on Round 2 feedback, we improved discoverability by adding a **Search/Filter bar**, added an **Auction Sharing** link generator to support organic growth, and reduced onboarding drop-off by explicitly linking to the Lace extension setup.
 - 💬 **Submit Feedback**: [https://github.com/Hariharaaa/Moonlight/issues](https://github.com/Hariharaaa/Moonlight/issues)
